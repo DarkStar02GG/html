@@ -1,801 +1,727 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-	<title>合成大西瓜 · 至尊金瓜3D画廊</title>
-	<style>
-		* {
-			margin: 0;
-			padding: 0;
-			box-sizing: border-box;
-			user-select: none;
-			-webkit-tap-highlight-color: transparent;
-			touch-action: none;
-		}
-
-		body {
-			background: linear-gradient(145deg, #1a6b2f 0%, #0a3a15 100%);
-			width: 100vw;
-			height: 100vh;
-			overflow: hidden;
-			position: fixed;
-			top: 0;
-			left: 0;
-			font-family: system-ui, 'Segoe UI', sans-serif;
-		}
-
-		.game-main {
-			width: 100%;
-			height: 100%;
-			display: flex;
-			flex-direction: column;
-			background: #fdf5e3;
-			transition: opacity 0.3s, filter 0.3s;
-		}
-
-		.game-main.blurred {
-			filter: blur(5px) brightness(0.3);
-			pointer-events: none;
-		}
-
-		.top-bar {
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-			padding: 12px 18px;
-			background: #2a241a;
-			gap: 12px;
-			flex-shrink: 0;
-		}
-
-		.score-panel, .best-panel {
-			background: #1e1910;
-			padding: 5px 16px;
-			border-radius: 40px;
-			text-align: center;
-			flex: 1;
-		}
-
-		.score-panel span, .best-panel span {
-			font-size: 12px;
-			color: #ffcd94;
-			display: block;
-		}
-
-		.score-val, .best-val {
-			font-size: 28px;
-			font-weight: bold;
-			color: #f9e45b;
-			line-height: 1;
-		}
-
-		.reset-btn {
-			background: #ff8c42;
-			border: none;
-			font-size: 18px;
-			font-weight: bold;
-			padding: 8px 20px;
-			border-radius: 40px;
-			color: #2d2b1f;
-			box-shadow: 0 3px 0 #a0522d;
-			cursor: pointer;
-			transition: 0.05s linear;
-		}
-
-		.reset-btn:active {
-			transform: translateY(2px);
-			box-shadow: 0 1px 0 #a0522d;
-		}
-
-		.canvas-area {
-			flex: 1;
-			display: flex;
-			justify-content: center;
-			align-items: center;
-			background: #fff9ef;
-			min-height: 0;
-			position: relative;
-		}
-
-		canvas#gameCanvas {
-			width: 100%;
-			height: 100%;
-			display: block;
-			background: #fff9ef;
-			touch-action: none;
-		}
-
-		/* 弹窗样式 */
-		.modal-overlay {
-			position: fixed;
-			top: 0;
-			left: 0;
-			width: 100%;
-			height: 100%;
-			background: rgba(0,0,0,0.8);
-			backdrop-filter: blur(8px);
-			display: flex;
-			justify-content: center;
-			align-items: center;
-			z-index: 1000;
-		}
-		.thanks-card {
-			background: linear-gradient(145deg, #fff5e6, #ffe0c4);
-			border-radius: 48px;
-			padding: 32px 28px;
-			text-align: center;
-			max-width: 320px;
-			width: 80%;
-			box-shadow: 0 20px 35px rgba(0,0,0,0.4);
-			border: 2px solid gold;
-		}
-		.thanks-card h2 { font-size: 28px; color: #d48d2b; margin-bottom: 20px; }
-		.thanks-card p { font-size: 20px; font-weight: bold; color: #2c5a2a; margin: 16px 0; }
-		.highlight-btn {
-			background: linear-gradient(135deg, #ffd966, #ffb347);
-			border: none;
-			font-size: 20px;
-			font-weight: bold;
-			padding: 12px 24px;
-			border-radius: 60px;
-			margin: 12px 8px;
-			cursor: pointer;
-			box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-			transition: transform 0.1s;
-		}
-		.highlight-btn:active { transform: scale(0.96); }
-		.ok-btn { background: #4cae4c; color: white; box-shadow: 0 4px 0 #2e6b2e; }
-		.password-modal {
-			position: fixed;
-			top: 0;
-			left: 0;
-			width: 100%;
-			height: 100%;
-			background: rgba(0,0,0,0.85);
-			display: flex;
-			justify-content: center;
-			align-items: center;
-			z-index: 1100;
-		}
-		.password-box {
-			background: #2c241a;
-			border-radius: 48px;
-			padding: 32px;
-			text-align: center;
-			color: #ffeaac;
-			width: 280px;
-		}
-		.password-box input {
-			width: 100%;
-			padding: 12px;
-			margin: 20px 0;
-			font-size: 24px;
-			text-align: center;
-			border-radius: 40px;
-			border: none;
-			background: #fff2df;
-		}
-		/* ========== 3D画廊容器 (CSS 3D + 华丽光影) ========== */
-		.gallery-container {
-			position: fixed;
-			top: 0;
-			left: 0;
-			width: 100%;
-			height: 100%;
-			z-index: 2000;
-			display: none;
-			background: radial-gradient(circle at center, #0a0a2a, #000000);
-			perspective: 1200px;
-			overflow: hidden;
-		}
-		.gallery-container.active {
-			display: flex;
-			justify-content: center;
-			align-items: center;
-		}
-		/* 3D画框组 */
-		.frame-3d {
-			width: 320px;
-			height: 320px;
-			position: relative;
-			transform-style: preserve-3d;
-			transform: rotateX(5deg) rotateY(0deg) translateZ(50px);
-			transition: transform 0.1s ease-out;
-			cursor: grab;
-		}
-		.frame-3d:active {
-			cursor: grabbing;
-		}
-		/* 画框主体 */
-		.frame-inner {
-			width: 100%;
-			height: 100%;
-			background: linear-gradient(145deg, #ffdd99, #ccaa66);
-			padding: 18px;
-			border-radius: 28px;
-			box-shadow: 0 0 50px rgba(255, 200, 50, 0.6), inset 0 1px 4px rgba(255,255,200,0.8);
-			position: relative;
-			transform: translateZ(20px);
-		}
-		.frame-inner img {
-			width: 100%;
-			height: 100%;
-			object-fit: contain;
-			border-radius: 16px;
-			box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-			background: #fff8e7;
-		}
-		/* 画框装饰宝石 */
-		.gem {
-			position: absolute;
-			width: 20px;
-			height: 20px;
-			background: radial-gradient(circle, #ff6688, #ff2244);
-			border-radius: 50%;
-			box-shadow: 0 0 15px #ff3366;
-			z-index: 10;
-		}
-		.gem-top-left { top: -8px; left: -8px; }
-		.gem-top-right { top: -8px; right: -8px; }
-		.gem-bottom-left { bottom: -8px; left: -8px; }
-		.gem-bottom-right { bottom: -8px; right: -8px; }
-		/* 光晕特效 */
-		.glow-effect {
-			position: absolute;
-			top: -30px;
-			left: -30px;
-			right: -30px;
-			bottom: -30px;
-			background: radial-gradient(circle, rgba(255,200,100,0.3), transparent 70%);
-			border-radius: 60px;
-			pointer-events: none;
-			animation: pulseGlow 2s ease-in-out infinite;
-		}
-		@keyframes pulseGlow {
-			0% { opacity: 0.4; transform: scale(0.98); }
-			50% { opacity: 0.8; transform: scale(1.02); }
-			100% { opacity: 0.4; transform: scale(0.98); }
-		}
-		/* 漂浮粒子 */
-		.particle {
-			position: absolute;
-			width: 4px;
-			height: 4px;
-			background: radial-gradient(circle, #ffaa55, #ff6644);
-			border-radius: 50%;
-			pointer-events: none;
-			animation: floatParticle 4s ease-in-out infinite;
-			opacity: 0.6;
-		}
-		@keyframes floatParticle {
-			0% { transform: translateY(0) translateX(0) scale(1); opacity: 0.6; }
-			100% { transform: translateY(-200px) translateX(100px) scale(0); opacity: 0; }
-		}
-		.title-3d {
-			margin-top: 50px;
-			font-size: 32px;
-			font-weight: bold;
-			color: gold;
-			text-shadow: 0 0 20px orange, 0 0 40px red;
-			letter-spacing: 4px;
-			animation: titleGlow 1.5s ease-in-out infinite;
-			text-align: center;
-			transform: translateZ(30px);
-		}
-		@keyframes titleGlow {
-			0% { text-shadow: 0 0 10px gold; }
-			50% { text-shadow: 0 0 30px #ffaa33, 0 0 20px #ff6633; }
-			100% { text-shadow: 0 0 10px gold; }
-		}
-		.back-3d-btn {
-			position: fixed;
-			bottom: 40px;
-			left: 40px;
-			background: rgba(0,0,0,0.7);
-			color: white;
-			border: none;
-			padding: 14px 32px;
-			border-radius: 60px;
-			font-size: 20px;
-			font-weight: bold;
-			z-index: 2100;
-			backdrop-filter: blur(8px);
-			cursor: pointer;
-			transition: 0.1s;
-			font-family: system-ui;
-		}
-		.back-3d-btn:active { transform: scale(0.96); }
-		.instruction {
-			position: fixed;
-			bottom: 30px;
-			right: 30px;
-			color: rgba(255,255,200,0.6);
-			background: rgba(0,0,0,0.4);
-			padding: 6px 12px;
-			border-radius: 30px;
-			font-size: 12px;
-			pointer-events: none;
-		}
-	</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>第一人称射击 - 二合一加载版</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;user-select:none;-webkit-tap-highlight-color:transparent}
+        body{background:#000;width:100vw;height:100vh;height:100dvh;overflow:hidden;position:fixed;top:0;left:0;touch-action:none}
+        canvas{display:block;position:fixed;top:0;left:0;z-index:1;touch-action:none}
+        .divider{position:fixed;top:0;left:50%;width:1px;height:100%;border-left:1px dashed rgba(255,255,255,0.08);pointer-events:none;z-index:5}
+        .joystick-zone{position:fixed;bottom:30px;left:20px;width:130px;height:130px;z-index:10;touch-action:none}
+        .joystick-base{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,0.06);border:2px solid rgba(255,255,255,0.2)}
+        .joystick-thumb{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:45px;height:45px;border-radius:50%;background:rgba(255,255,255,0.25);border:2px solid rgba(255,255,255,0.45)}
+        .btn-jump{position:fixed;bottom:100px;right:30px;width:70px;height:70px;border-radius:50%;background:rgba(255,200,50,0.2);border:2px solid rgba(255,200,50,0.45);color:#ffc832;font-size:14px;font-weight:bold;display:flex;align-items:center;justify-content:center;z-index:10;touch-action:none}
+        .btn-jump:active{background:rgba(255,200,50,0.5)}
+        .btn-slide{position:fixed;bottom:30px;right:30px;width:70px;height:70px;border-radius:50%;background:rgba(100,200,255,0.2);border:2px solid rgba(100,200,255,0.45);color:#88ccff;font-size:14px;font-weight:bold;display:flex;align-items:center;justify-content:center;z-index:10;touch-action:none}
+        .btn-slide:active{background:rgba(100,200,255,0.5)}
+        .btn-aim{position:fixed;bottom:175px;right:30px;width:70px;height:70px;border-radius:50%;background:rgba(255,50,50,0.2);border:2px solid rgba(255,50,50,0.45);color:#ff5555;font-size:12px;font-weight:bold;display:flex;align-items:center;justify-content:center;z-index:10;touch-action:none}
+        .btn-aim:active{background:rgba(255,50,50,0.5)}
+        #crosshair { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 25; pointer-events: none; color: rgba(255, 255, 255, 0.9); font-size: 30px; font-weight: 100; font-family: monospace; text-shadow: 0 0 5px rgba(0,0,0,0.8); }
+        #ammoHUD { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); z-index: 30; color: #fff; font-size: 22px; font-weight: bold; font-family: monospace; text-shadow: 0 0 10px rgba(0,0,0,0.8); pointer-events: none; background: rgba(0,0,0,0.5); padding: 5px 25px; border-radius: 25px; border: 1px solid rgba(255,255,255,0.2); }
+        #loadingText { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 999; color: #fff; font-size: 18px; font-family: sans-serif; background: rgba(0,0,0,0.8); padding: 15px 30px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2); pointer-events: none; transition: opacity 0.5s; }
+    </style>
 </head>
 <body>
-<div class="game-main" id="gameMain">
-	<div class="top-bar">
-		<div class="score-panel"><span>🍉 分数</span><div class="score-val" id="scoreDisplay">0</div></div>
-		<div class="best-panel"><span>🏆 最佳</span><div class="best-val" id="bestDisplay">0</div></div>
-		<button class="reset-btn" id="resetButton">🍈 重来</button>
-	</div>
-	<div class="canvas-area">
-		<canvas id="gameCanvas"></canvas>
-	</div>
-</div>
-<div id="galleryContainer" class="gallery-container">
-	<div style="text-align: center; transform-style: preserve-3d;">
-		<div id="frame3d" class="frame-3d">
-			<div class="glow-effect"></div>
-			<div class="frame-inner">
-				<img id="celebrationImage" src="https://www.boximchat.com/file/box-im/image/20260602/2061803225962549248.jpg" alt="至尊金瓜">
-			</div>
-			<div class="gem gem-top-left"></div>
-			<div class="gem gem-top-right"></div>
-			<div class="gem gem-bottom-left"></div>
-			<div class="gem gem-bottom-right"></div>
-		</div>
-		<div class="title-3d">✨ 至 尊 金 瓜 ✨</div>
-	</div>
-	<div class="instruction">👆 手指拖动旋转 | 双指缩放视角</div>
-	<button id="backFromGallery" class="back-3d-btn">← BACK 返回游戏</button>
-</div>
+    <div id="loadingText">⏳ 正在加载武器模型...</div>
 
-<script>
-	// ========== 1. 游戏2D核心 ==========
-	const LOGIC_W = 500;
-	const LOGIC_H = 720;
-	const canvas = document.getElementById('gameCanvas');
-	const ctx = canvas.getContext('2d');
-	canvas.width = LOGIC_W;
-	canvas.height = LOGIC_H;
-	
-	function fitCanvas() {
-		const area = document.querySelector('.canvas-area');
-		if(area) {
-			const w = area.clientWidth, h = area.clientHeight;
-			const ratio = LOGIC_W / LOGIC_H;
-			let dw = w, dh = w / ratio;
-			if(dh > h) { dh = h; dw = h * ratio; }
-			canvas.style.width = dw + 'px';
-			canvas.style.height = dh + 'px';
-		}
-	}
-	window.addEventListener('resize', fitCanvas);
-	fitCanvas();
-	
-	// 加载图片 (7种基础 + 1彩蛋)
-	const fruitImg = [];
-	const baseUrls = [
-		"https://www.boximchat.com/file/box-im/image/20260602/2061794202001379328.webp",
-		"https://www.boximchat.com/file/box-im/image/20260602/2061794210339655680.webp",
-		"https://www.boximchat.com/file/box-im/image/20260602/2061794193939927040.webp",
-		"https://www.boximchat.com/file/box-im/image/20260602/2061794155826286592.jpg",
-		"https://www.boximchat.com/file/box-im/image/20260602/2061794177817022464.jpg",
-		"https://www.boximchat.com/file/box-im/image/20260602/2061794169369694208.jpg",
-		"https://www.boximchat.com/file/box-im/image/20260602/2061794186146910208.webp"
-	];
-	for(let i=0;i<7;i++){ let img=new Image(); img.src=baseUrls[i]; fruitImg.push(img); }
-	const eggImg = new Image();
-	eggImg.src = "https://www.boximchat.com/file/box-im/image/20260602/2061803225962549248.jpg";
-	fruitImg.push(eggImg);
-	
-	const RADIUS = [36, 42, 48, 54, 60, 66, 74, 82];
-	const SCORE = [5,10,20,40,80,160,320,999];
-	const EGG_TYPE = 7;
-	
-	let fruits = [];
-	let nextType = 0;
-	let currentScore = 0;
-	let bestScore = 0;
-	let gameOver = false;
-	let aimX = LOGIC_W/2;
-	let isDragging = false;
-	let eggUnlocked = false;
-	
-	let userIP = "local";
-	async function loadBest() {
-		try {
-			const res = await fetch('https://api.ipify.org?format=json');
-			const data = await res.json();
-			userIP = data.ip || "device";
-		} catch(e) { userIP = "offline"; }
-		const saved = localStorage.getItem(`wm_best_${userIP}`);
-		bestScore = saved ? parseInt(saved) : 0;
-		updateUI();
-	}
-	function saveBest() {
-		if(currentScore > bestScore) {
-			bestScore = currentScore;
-			localStorage.setItem(`wm_best_${userIP}`, bestScore);
-			updateUI();
-		}
-	}
-	function addScore(pts) { currentScore += pts; updateUI(); saveBest(); }
-	function updateUI() {
-		document.getElementById('scoreDisplay').innerText = currentScore;
-		document.getElementById('bestDisplay').innerText = bestScore;
-	}
-	
-	// 物理：极低弹跳
-	const GRAVITY = 0.38;
-	const BOUNCE = 0.08;
-	const AIR_DRAG = 0.998;
-	const GROUND_DRAG = 0.99;
-	const WALL_BOUNCE = 0.2;
-	
-	function updatePhysics() {
-		for(let f of fruits) {
-			f.vy += GRAVITY;
-			f.vx *= AIR_DRAG;
-			f.vy *= AIR_DRAG;
-			f.x += f.vx;
-			f.y += f.vy;
-			const r = RADIUS[f.type];
-			if(f.x - r < 0) { f.x = r; f.vx = -f.vx * WALL_BOUNCE; if(Math.abs(f.vx)<0.3) f.vx=0; }
-			if(f.x + r > LOGIC_W) { f.x = LOGIC_W - r; f.vx = -f.vx * WALL_BOUNCE; if(Math.abs(f.vx)<0.3) f.vx=0; }
-			if(f.y + r > LOGIC_H) {
-				f.y = LOGIC_H - r;
-				if(Math.abs(f.vy) > 0.4) f.vy = -f.vy * BOUNCE;
-				else f.vy = 0;
-				if(Math.abs(f.vy) < 0.2) f.vy = 0;
-				f.vx *= GROUND_DRAG;
-				if(Math.abs(f.vx)<0.2) f.vx=0;
-			}
-			if(f.y - r < 0) { f.y = r; if(f.vy<0) f.vy = -f.vy*0.15; }
-		}
-	}
-	
-	function tryMerge(a,b) {
-		if(a.type !== b.type) return false;
-		if(a.type === EGG_TYPE) return false;
-		let newType = a.type + 1;
-		if(newType === EGG_TYPE && !eggUnlocked) return false;
-		if(newType > EGG_TYPE) return false;
-		
-		const midX = (a.x+b.x)/2;
-		const midY = (a.y+b.y)/2 - 5;
-		const idx1 = fruits.indexOf(a);
-		const idx2 = fruits.indexOf(b);
-		if(idx1 !== -1) fruits.splice(idx1,1);
-		const nidx = fruits.indexOf(b);
-		if(nidx !== -1) fruits.splice(nidx,1);
-		
-		const newFruit = {
-			x: midX, y: midY,
-			vx: (a.vx+b.vx)*0.5 + (Math.random()-0.5)*0.6,
-			vy: (a.vy+b.vy)*0.5 - 0.5,
-			type: newType
-		};
-		fruits.push(newFruit);
-		addScore(SCORE[newType]);
-		
-		if(newType === EGG_TYPE && eggUnlocked) {
-			show3DGallery();
-		}
-		return true;
-	}
-	
-	function handleCollisions() {
-		let merged = true;
-		let loop = 0;
-		while(merged && loop < 10) {
-			merged = false;
-			for(let i=0;i<fruits.length;i++) {
-				for(let j=i+1;j<fruits.length;j++) {
-					const a=fruits[i], b=fruits[j];
-					const dx = a.x-b.x, dy = a.y-b.y;
-					const dist = Math.hypot(dx,dy);
-					const minD = RADIUS[a.type]+RADIUS[b.type];
-					if(dist < minD) {
-						const angle = Math.atan2(dy,dx);
-						const overlap = minD - dist;
-						const moveX = Math.cos(angle)*overlap*0.5;
-						const moveY = Math.sin(angle)*overlap*0.5;
-						a.x += moveX; a.y += moveY;
-						b.x -= moveX; b.y -= moveY;
-						const nx = dx/dist, ny = dy/dist;
-						const vrelx = a.vx-b.vx, vrely = a.vy-b.vy;
-						const dot = vrelx*nx + vrely*ny;
-						if(dot < 0) {
-							const e = 0.15;
-							const imp = (1+e)*dot;
-							a.vx -= imp*nx; a.vy -= imp*ny;
-							b.vx += imp*nx; b.vy += imp*ny;
-						}
-					}
-				}
-			}
-			for(let i=0;i<fruits.length;i++) {
-				for(let j=i+1;j<fruits.length;j++) {
-					const a=fruits[i], b=fruits[j];
-					const dist = Math.hypot(a.x-b.x, a.y-b.y);
-					const minD = RADIUS[a.type]+RADIUS[b.type];
-					if(dist < minD+3 && a.type === b.type) {
-						if(tryMerge(a,b)) { merged=true; break; }
-					}
-				}
-				if(merged) break;
-			}
-			loop++;
-		}
-	}
-	
-	function checkGameOver() {
-		if(gameOver) return;
-		for(let f of fruits) {
-			const moving = Math.abs(f.vy) > 0.5;
-			if(!moving && (f.y - RADIUS[f.type] < 28)) {
-				gameOver = true;
-				return;
-			}
-			if(f.y - RADIUS[f.type] < 5) { gameOver=true; return; }
-		}
-	}
-	
-	function spawnFruit(xPos) {
-		if(gameOver) return false;
-		const type = nextType;
-		const rad = RADIUS[type];
-		let targetX = Math.min(LOGIC_W-rad-5, Math.max(rad+5, xPos));
-		let collide = false;
-		for(let f of fruits) {
-			if(Math.hypot(f.x-targetX, f.y-42) < RADIUS[f.type]+rad+3) { collide=true; break; }
-		}
-		if(collide) {
-			let offsets = [0,10,-10,20,-20,30,-30];
-			let placed = false;
-			for(let off of offsets) {
-				let nx = targetX+off;
-				if(nx>rad+4 && nx<LOGIC_W-rad-4) {
-					let ok = true;
-					for(let f of fruits) {
-						if(Math.hypot(f.x-nx, f.y-42) < RADIUS[f.type]+rad+2) { ok=false; break; }
-					}
-					if(ok) { targetX=nx; placed=true; break; }
-				}
-			}
-			if(!placed) { gameOver=true; return false; }
-		}
-		fruits.push({ x:targetX, y:42, vx:(Math.random()-0.5)*0.6, vy:0, type:type });
-		let r = Math.random();
-		if(r<0.65) nextType=0;
-		else if(r<0.8) nextType=1;
-		else if(r<0.92) nextType=2;
-		else nextType=3;
-		if(nextType>5) nextType=0;
-		return true;
-	}
-	
-	function resetGame() {
-		fruits = [];
-		currentScore = 0;
-		gameOver = false;
-		nextType = 0;
-		updateUI();
-	}
-	
-	function draw2D() {
-		ctx.clearRect(0,0,LOGIC_W,LOGIC_H);
-		ctx.fillStyle="#e6d5b3"; ctx.fillRect(0,LOGIC_H-14,LOGIC_W,14);
-		ctx.fillStyle="#bc9a6c"; ctx.fillRect(0,LOGIC_H-7,LOGIC_W,7);
-		for(let f of fruits) {
-			const r = RADIUS[f.type];
-			const img = fruitImg[f.type];
-			if(img && img.complete && img.naturalWidth>0) {
-				ctx.save(); ctx.shadowBlur=5; ctx.beginPath(); ctx.arc(f.x,f.y,r-2,0,Math.PI*2); ctx.clip();
-				ctx.drawImage(img, f.x-r, f.y-r, r*2, r*2); ctx.restore();
-			} else {
-				ctx.beginPath(); ctx.arc(f.x,f.y,r-2,0,Math.PI*2); ctx.fillStyle="#e0b87a"; ctx.fill();
-			}
-		}
-		const rpre = RADIUS[nextType];
-		ctx.globalAlpha=0.85;
-		ctx.beginPath(); ctx.setLineDash([5,7]); ctx.moveTo(aimX,18); ctx.lineTo(aimX,75); ctx.strokeStyle="#f5ac78"; ctx.stroke();
-		if(fruitImg[nextType] && fruitImg[nextType].complete) {
-			ctx.drawImage(fruitImg[nextType], aimX-rpre, 8, rpre*2, rpre*2);
-		}
-		ctx.globalAlpha=1;
-		if(gameOver) {
-			ctx.font="bold 30px system-ui"; ctx.fillStyle="#d9782e"; ctx.fillText("GAME OVER", LOGIC_W/2-120, LOGIC_H/2);
-		}
-	}
-	
-	function gameLoop() {
-		if(!gameOver) {
-			for(let i=0;i<5;i++) { updatePhysics(); handleCollisions(); }
-			checkGameOver();
-		}
-		draw2D();
-		requestAnimationFrame(gameLoop);
-	}
-	
-	// ========== 2. CSS 3D 画廊 (图片100%显示，带拖拽旋转) ==========
-	let galleryActive = false;
-	let currentRotX = 5, currentRotY = 0;
-	let startX = 0, startY = 0;
-	let isDragging3D = false;
-	
-	function show3DGallery() {
-		if(galleryActive) return;
-		galleryActive = true;
-		
-		const container = document.getElementById('galleryContainer');
-		const frame = document.getElementById('frame3d');
-		const gameMain = document.getElementById('gameMain');
-		
-		// 重置旋转角度
-		currentRotX = 5;
-		currentRotY = 0;
-		updateFrameTransform();
-		
-		container.classList.add('active');
-		gameMain.classList.add('blurred');
-		
-		// 生成漂浮粒子特效
-		for(let i=0;i<60;i++) {
-			createParticle(container);
-		}
-		setInterval(() => {
-			if(galleryActive) createParticle(container);
-		}, 400);
-		
-		// 拖拽旋转逻辑
-		const onPointerStart = (e) => {
-			e.preventDefault();
-			isDragging3D = true;
-			const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-			const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-			startX = clientX;
-			startY = clientY;
-		};
-		
-		const onPointerMove = (e) => {
-			if(!isDragging3D) return;
-			e.preventDefault();
-			const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-			const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-			const deltaX = clientX - startX;
-			const deltaY = clientY - startY;
-			currentRotY += deltaX * 0.5;
-			currentRotX -= deltaY * 0.3;
-			currentRotX = Math.min(30, Math.max(-20, currentRotX));
-			currentRotY = Math.min(45, Math.max(-45, currentRotY));
-			updateFrameTransform();
-			startX = clientX;
-			startY = clientY;
-		};
-		
-		const onPointerEnd = () => {
-			isDragging3D = false;
-		};
-		
-		function updateFrameTransform() {
-			frame.style.transform = `rotateX(${currentRotX}deg) rotateY(${currentRotY}deg) translateZ(40px)`;
-		}
-		
-		frame.addEventListener('touchstart', onPointerStart, {passive: false});
-		frame.addEventListener('touchmove', onPointerMove, {passive: false});
-		frame.addEventListener('touchend', onPointerEnd);
-		frame.addEventListener('mousedown', onPointerStart);
-		window.addEventListener('mousemove', onPointerMove);
-		window.addEventListener('mouseup', onPointerEnd);
-		
-		// 返回按钮
-		const backBtn = document.getElementById('backFromGallery');
-		const newBack = backBtn.cloneNode(true);
-		backBtn.parentNode.replaceChild(newBack, backBtn);
-		newBack.onclick = () => {
-			galleryActive = false;
-			container.classList.remove('active');
-			gameMain.classList.remove('blurred');
-			frame.removeEventListener('touchstart', onPointerStart);
-			frame.removeEventListener('touchmove', onPointerMove);
-			frame.removeEventListener('touchend', onPointerEnd);
-			frame.removeEventListener('mousedown', onPointerStart);
-		};
-	}
-	
-	function createParticle(container) {
-		const particle = document.createElement('div');
-		particle.className = 'particle';
-		const size = Math.random() * 6 + 2;
-		particle.style.width = size + 'px';
-		particle.style.height = size + 'px';
-		particle.style.left = Math.random() * 100 + '%';
-		particle.style.top = Math.random() * 100 + '%';
-		particle.style.animationDuration = Math.random() * 3 + 2 + 's';
-		particle.style.animationDelay = Math.random() * 2 + 's';
-		container.appendChild(particle);
-		setTimeout(() => { if(particle.parentNode) particle.remove(); }, 4000);
-	}
-	
-	// ========== 3. 弹窗与事件 ==========
-	function showThanksAndPassword() {
-		const modal = document.createElement('div');
-		modal.className = 'modal-overlay';
-		modal.innerHTML = `
-			<div class="thanks-card">
-				<h2>✨ 特别鸣谢 ✨</h2>
-				<p>黄XX 提供核心美术资源</p>
-				<button id="huangBtn" class="highlight-btn">🌟 黄XX 🌟</button>
-				<button id="okStartBtn" class="highlight-btn ok-btn">OK 进入游戏</button>
-			</div>
-		`;
-		document.body.appendChild(modal);
-		
-		document.getElementById('huangBtn').onclick = () => {
-			modal.remove();
-			showPasswordDialog();
-		};
-		document.getElementById('okStartBtn').onclick = () => {
-			modal.remove();
-			startGame();
-		};
-	}
-	
-	function showPasswordDialog() {
-		const pwdModal = document.createElement('div');
-		pwdModal.className = 'password-modal';
-		pwdModal.innerHTML = `
-			<div class="password-box">
-				<h3>🔐 彩蛋密码</h3>
-				<input type="password" id="pwdInput" placeholder="输入密码" autocomplete="off">
-				<button id="unlockBtn" class="highlight-btn">解锁至尊金瓜</button>
-				<button id="closePwd" class="highlight-btn" style="background:#555">跳过</button>
-			</div>
-		`;
-		document.body.appendChild(pwdModal);
-		
-		document.getElementById('unlockBtn').onclick = () => {
-			const pwd = document.getElementById('pwdInput').value;
-			if(pwd === '54188') {
-				eggUnlocked = true;
-				alert('🎉 彩蛋已解锁！现在合成大西瓜后可继续合成【至尊金瓜】，合成后将有3D豪华庆祝！');
-				pwdModal.remove();
-				startGame();
-			} else {
-				alert('密码错误！');
-				pwdModal.remove();
-				startGame();
-			}
-		};
-		document.getElementById('closePwd').onclick = () => {
-			pwdModal.remove();
-			startGame();
-		};
-	}
-	
-	function startGame() {
-		resetGame();
-		gameLoop();
-		loadBest();
-		
-		function getLogicX(e) {
-			const rect = canvas.getBoundingClientRect();
-			const scale = LOGIC_W / rect.width;
-			let cx = e.touches ? e.touches[0].clientX : e.clientX;
-			let val = (cx - rect.left) * scale;
-			return Math.min(LOGIC_W-20, Math.max(20, val));
-		}
-		canvas.addEventListener('touchstart', (e)=>{ e.preventDefault(); aimX=getLogicX(e); isDragging=true; });
-		canvas.addEventListener('touchmove', (e)=>{ e.preventDefault(); if(!gameOver) aimX=getLogicX(e); });
-		canvas.addEventListener('touchend', (e)=>{ e.preventDefault(); if(!gameOver && isDragging) spawnFruit(aimX); isDragging=false; });
-		canvas.addEventListener('mousedown', (e)=>{ e.preventDefault(); aimX=getLogicX(e); isDragging=true; });
-		window.addEventListener('mouseup', (e)=>{ if(isDragging && !gameOver) spawnFruit(aimX); isDragging=false; });
-		window.addEventListener('mousemove', (e)=>{ if(isDragging && !gameOver) aimX=getLogicX(e); });
-		document.getElementById('resetButton').onclick = () => resetGame();
-	}
-	
-	showThanksAndPassword();
-	window.addEventListener('resize', fitCanvas);
-</script>
+    <div class="divider"></div>
+    <div id="crosshair">+</div>
+    <div id="ammoHUD">🔫 9999999</div>
+
+    <div class="joystick-zone" id="joystickZone">
+        <div class="joystick-base"></div>
+        <div class="joystick-thumb" id="joystickThumb"></div>
+    </div>
+    <button class="btn-jump" id="jumpBtn">🦘</button>
+    <button class="btn-slide" id="slideBtn">🤸</button>
+    <button class="btn-aim" id="aimBtn">🎯</button>
+
+    <script type="importmap">
+        { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color('#12121f');
+        scene.fog = new THREE.Fog('#12121f', 8, 40);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.05, 100);
+        camera.position.set(0, 1.6, 0);
+        camera.rotation.order = 'YXZ';
+        scene.add(camera);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        document.body.appendChild(renderer.domElement);
+
+        const rgbeLoader = new RGBELoader();
+        rgbeLoader.load('https://threejs.org/examples/textures/equirectangular/venice_sunset_1k.hdr', (texture) => {
+            texture.mapping = THREE.EquirectangularReflectionMapping;
+            scene.environment = texture;
+        });
+
+        const sun = new THREE.DirectionalLight('#ffffff', 2.5);
+        sun.position.set(5, 15, 8);
+        sun.castShadow = true;
+        sun.shadow.mapSize.width = 2048;
+        sun.shadow.mapSize.height = 2048;
+        sun.shadow.camera.near = 0.5;
+        sun.shadow.camera.far = 30;
+        const d = 15;
+        sun.shadow.camera.left = -d; sun.shadow.camera.right = d;
+        sun.shadow.camera.top = d; sun.shadow.camera.bottom = -d;
+        scene.add(sun);
+
+        const fillLight = new THREE.DirectionalLight('#88aacc', 0.6);
+        fillLight.position.set(-5, 0, 10);
+        scene.add(fillLight);
+
+        const ambient = new THREE.AmbientLight('#404060', 0.4);
+        scene.add(ambient);
+
+        // 透明空气地板
+        const invisibleFloor = new THREE.Mesh(
+            new THREE.PlaneGeometry(80, 80), 
+            new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 })
+        );
+        invisibleFloor.rotation.x = -Math.PI / 2;
+        invisibleFloor.position.y = 0;
+        scene.add(invisibleFloor);
+
+        // 深渊灰色地面 (保持-10米)
+        const gridFloor = new THREE.Mesh(
+            new THREE.PlaneGeometry(80, 80), 
+            new THREE.MeshStandardMaterial({ color: '#333344', roughness: 0.8 })
+        );
+        gridFloor.rotation.x = -Math.PI / 2;
+        gridFloor.position.y = -10.0; 
+        gridFloor.receiveShadow = true;
+        scene.add(gridFloor);
+        
+        const gridHelper = new THREE.GridHelper(80, 80, '#444455', '#222233');
+        gridHelper.position.y = -10.0;
+        scene.add(gridHelper);
+
+        // ===== 15米巨人 =====
+        const enemyMat = new THREE.MeshStandardMaterial({ color: '#44aa88', roughness: 0.6 });
+        const enemies = [];
+        const raycaster = new THREE.Raycaster();
+
+        function createEnemy(index) {
+            const group = new THREE.Group();
+            const torso = new THREE.Mesh(new THREE.BoxGeometry(5, 7.5, 3.5), enemyMat);
+            torso.position.y = 3.75;
+            torso.castShadow = true; torso.receiveShadow = true;
+            group.add(torso);
+
+            const head = new THREE.Mesh(new THREE.SphereGeometry(1.5, 8, 8), new THREE.MeshStandardMaterial({ color: '#ffccaa', roughness: 0.3 }));
+            head.position.y = 10.0;
+            head.castShadow = true; head.receiveShadow = true;
+            head.userData.bodyPart = 'head';
+            group.add(head);
+
+            const armL = new THREE.Mesh(new THREE.BoxGeometry(1.0, 6.0, 1.0), enemyMat);
+            armL.position.set(-3.5, 3.75, 0);
+            armL.castShadow = true; armL.receiveShadow = true;
+            group.add(armL);
+
+            const armR = new THREE.Mesh(new THREE.BoxGeometry(1.0, 6.0, 1.0), enemyMat);
+            armR.position.set(3.5, 3.75, 0);
+            armR.castShadow = true; armR.receiveShadow = true;
+            group.add(armR);
+
+            const legL = new THREE.Mesh(new THREE.BoxGeometry(1.5, 7.0, 1.5), enemyMat);
+            legL.position.set(-1.5, -3.5, 0);
+            legL.castShadow = true; legL.receiveShadow = true;
+            group.add(legL);
+
+            const legR = new THREE.Mesh(new THREE.BoxGeometry(1.5, 7.0, 1.5), enemyMat);
+            legR.position.set(1.5, -3.5, 0);
+            legR.castShadow = true; legR.receiveShadow = true;
+            group.add(legR);
+
+            group.userData = { isEnemy: true, hp: 100, maxHp: 100, index: index, isDead: false, deathTimer: 0, resetTimer: 0, torso: torso, head: head, legL: legL, legR: legR };
+
+            const angle = Math.random() * Math.PI * 2;
+            const radius = 5 + Math.random() * 10;
+            group.position.set(Math.cos(angle) * radius, -10.0 + 7.5, Math.sin(angle) * radius);
+            group.rotation.y = Math.random() * Math.PI * 2;
+
+            const canvas = document.createElement('canvas');
+            canvas.width = 256; canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            const hpSpriteMat = new THREE.CanvasTexture(canvas);
+            const hpSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: hpSpriteMat, depthTest: false }));
+            hpSprite.scale.set(10, 2, 1);
+            hpSprite.position.y = 15.0; 
+            group.add(hpSprite);
+            
+            group.userData.hpCanvas = canvas; group.userData.hpCtx = ctx;
+            group.userData.hpSprite = hpSprite; group.userData.hpTexture = hpSpriteMat;
+
+            group.userData.updateHP = function() {
+                const hp = this.hp / this.maxHp;
+                const ctx = this.hpCtx; const canvas = this.hpCanvas;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#333'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = hp > 0.5 ? '#44ff44' : (hp > 0.25 ? '#ffaa00' : '#ff3333');
+                ctx.fillRect(2, 2, (canvas.width - 4) * Math.max(0, hp), canvas.height - 4);
+                this.hpTexture.needsUpdate = true;
+            };
+            group.userData.updateHP();
+
+            scene.add(group);
+            enemies.push(group);
+            return group;
+        }
+        for (let i = 0; i < 10; i++) createEnemy(i);
+
+        // ===== 特效系统 =====
+        const bulletHoles = []; const muzzleFlashes = []; const bulletTrails = [];
+        const holeMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9, metalness: 0.1 });
+
+        function createBulletHit(pos, normal) {
+            if (bulletHoles.length >= 20) {
+                const old = bulletHoles.shift(); scene.remove(old);
+                old.geometry.dispose(); old.material.dispose();
+            }
+            const hole = new THREE.Mesh(new THREE.CircleGeometry(0.06, 6), holeMat);
+            hole.position.copy(pos).add(normal.clone().multiplyScalar(0.02));
+            hole.lookAt(pos.clone().add(normal));
+            scene.add(hole);
+            hole.userData.lifeTime = 5.0;
+            bulletHoles.push(hole);
+        }
+
+        function createMuzzleFlash(pos, dir) {
+            const flashGroup = new THREE.Group();
+            const coreMat = new THREE.SpriteMaterial({
+                map: new THREE.CanvasTexture(generateSparkTexture()),
+                transparent: true, opacity: 1, blending: THREE.AdditiveBlending
+            });
+            const core = new THREE.Sprite(coreMat);
+            core.scale.set(0.4, 0.4, 1);
+            flashGroup.add(core);
+
+            for (let i = 0; i < 5; i++) {
+                const size = 0.15 + Math.random() * 0.2;
+                const mat = new THREE.SpriteMaterial({
+                    map: new THREE.CanvasTexture(generateSparkTexture()),
+                    transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending
+                });
+                const sprite = new THREE.Sprite(mat);
+                const angle = Math.random() * Math.PI * 2;
+                const radius = 0.15 + Math.random() * 0.1;
+                sprite.position.set(Math.cos(angle) * radius, Math.sin(angle) * radius, Math.random() * 0.1);
+                sprite.scale.set(size, size, 1);
+                flashGroup.add(sprite);
+            }
+            flashGroup.position.copy(pos);
+            flashGroup.lookAt(pos.clone().add(dir));
+            scene.add(flashGroup);
+            flashGroup.userData.lifeTime = 0.1;
+            muzzleFlashes.push(flashGroup);
+        }
+
+        function generateSparkTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 32; canvas.height = 32;
+            const ctx = canvas.getContext('2d');
+            const gradient = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+            gradient.addColorStop(0, 'rgba(255, 255, 200, 1)');
+            gradient.addColorStop(0.2, 'rgba(255, 200, 100, 1)');
+            gradient.addColorStop(0.6, 'rgba(255, 100, 20, 0.8)');
+            gradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
+            ctx.fillStyle = gradient; ctx.fillRect(0, 0, 32, 32);
+            return canvas;
+        }
+
+        function createBulletTrail(start, end) {
+            const points = []; const steps = 20;
+            for (let i = 0; i <= steps; i++) {
+                const t = i / steps; const p = new THREE.Vector3().lerpVectors(start, end, t);
+                points.push(p);
+            }
+            const geo = new THREE.BufferGeometry().setFromPoints(points);
+            const mat = new THREE.LineBasicMaterial({ color: 0xffdd44, transparent: true, opacity: 0.9 });
+            const line = new THREE.Line(geo, mat);
+            scene.add(line);
+            line.userData.lifeTime = 0.15;
+            bulletTrails.push(line);
+        }
+
+        // ===== 核心逻辑 =====
+        const handGroup = new THREE.Group();
+        camera.add(handGroup);
+        handGroup.position.set(0.25, -0.35, -0.6);
+
+        const state = {
+            moveX: 0, moveZ: 0, baseSpeed: 15, currentSpeed: 15, baseSpeedAim: 7.5,
+            eulerX: 0, eulerY: 0, jumpVel: 0, isGrounded: true,
+            isSliding: false, slideDistance: 0, slideMaxDistance: 20,
+            slideCooldown: 0, bobTimer: 0, slideDirX: 0, slideDirZ: 0,
+            currentCamY: 1.6, targetCamY: 1.6, currentTilt: 0, targetTilt: 0,
+            currentFOV: 75, targetFOV: 75,
+            isSlideJumping: false, slideJumpTime: 0, slideJumpDuration: 0.8,
+            slideJumpStartY: 0, slideJumpStartX: 0, slideJumpStartZ: 0,
+            slideJumpDirX: 0, slideJumpDirZ: 0, slideJumpMaxHeight: 2.0,
+            isAiming: false, aimTransitionTime: 0, aimDuration: 0.1,
+            currentScale: 0.03, currentX: 0.00, currentY: -0.35, currentZ: 0.20, 
+            currentRotX: 0.01, currentRotY: -3.14, currentRotZ: 0.01,
+            targetScale: 0.03, targetX: 0.00, targetY: -0.35, targetZ: 0.20, 
+            targetRotX: 0.01, targetRotY: -3.14, targetRotZ: 0.01,
+            fireCooldown: 0,
+            fireRate: 0.08,
+        };
+
+        const lookSensitivity = 0.013;
+        const gyroSensitivity = 0;
+
+        // 摇杆
+        const joystickZone = document.getElementById('joystickZone');
+        const joystickThumb = document.getElementById('joystickThumb');
+        let jsActive = false, jsId = null;
+
+        joystickZone.addEventListener('pointerdown', e => {
+            e.preventDefault(); e.stopPropagation();
+            jsActive = true; jsId = e.pointerId;
+            joystickZone.setPointerCapture(e.pointerId);
+        });
+
+        joystickZone.addEventListener('pointermove', e => {
+            if (!jsActive || e.pointerId !== jsId) return;
+            e.preventDefault(); e.stopPropagation();
+            const rect = joystickZone.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+            let dx = e.clientX - cx, dy = e.clientY - cy;
+            const maxR = 40, dist = Math.hypot(dx, dy);
+            if (dist > maxR) { dx = (dx / dist) * maxR; dy = (dy / dist) * maxR; }
+            joystickThumb.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+            state.moveX = dx / maxR;
+            state.moveZ = dy / maxR;
+        });
+
+        joystickZone.addEventListener('pointerup', e => {
+            if (e.pointerId !== jsId) return;
+            jsActive = false; jsId = null;
+            state.moveX = 0; state.moveZ = 0;
+            joystickThumb.style.transform = 'translate(-50%, -50%)';
+        });
+
+        // 陀螺仪
+        if (window.DeviceOrientationEvent) {
+            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission().then(state => {
+                    if (state === 'granted') {
+                        window.addEventListener('deviceorientation', handleOrientation);
+                    }
+                }).catch(console.error);
+            } else {
+                window.addEventListener('deviceorientation', handleOrientation);
+            }
+        }
+
+        let initialBeta = null, initialGamma = null;
+        function handleOrientation(event) {
+            if (event.beta === null || event.gamma === null) return;
+            if (initialBeta === null) { initialBeta = event.beta; initialGamma = event.gamma; return; }
+            let deltaBeta = (event.beta - initialBeta) * gyroSensitivity;
+            let deltaGamma = (event.gamma - initialGamma) * gyroSensitivity;
+            deltaBeta = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, deltaBeta));
+            state.eulerX = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, state.eulerX + deltaBeta * 0.01));
+            state.eulerY += deltaGamma * 0.01;
+        }
+
+        // 视角滑动
+        let viewActive = false, viewId = null, lvx = 0, lvy = 0;
+        document.addEventListener('pointerdown', e => {
+            if (e.clientX > window.innerWidth * 0.35 && !viewActive) {
+                viewActive = true; viewId = e.pointerId; lvx = e.clientX; lvy = e.clientY;
+            }
+        });
+        document.addEventListener('pointermove', e => {
+            if (!viewActive || e.pointerId !== viewId) return;
+            state.eulerY -= (e.clientX - lvx) * lookSensitivity;
+            state.eulerX -= (e.clientY - lvy) * lookSensitivity;
+            state.eulerX = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, state.eulerX));
+            lvx = e.clientX; lvy = e.clientY;
+        });
+        document.addEventListener('pointerup', e => { if (e.pointerId === viewId) { viewActive = false; viewId = null; } });
+        renderer.domElement.addEventListener('click', () => { renderer.domElement.requestPointerLock(); });
+        document.addEventListener('mousemove', e => {
+            if (document.pointerLockElement === renderer.domElement) {
+                state.eulerY -= e.movementX * lookSensitivity;
+                state.eulerX -= e.movementY * lookSensitivity;
+                state.eulerX = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, state.eulerX));
+            }
+        });
+
+        // 举镜按钮
+        const aimBtn = document.getElementById('aimBtn');
+        aimBtn.addEventListener('pointerdown', e => {
+            e.preventDefault(); 
+            state.isAiming = true;
+            state.aimTransitionTime = 0;
+            state.targetScale = 0.03; state.targetX = -0.255; state.targetY = -0.205; state.targetZ = 0.60;
+            state.targetRotX = 0.01; state.targetRotY = -3.14; state.targetRotZ = 0.01;
+            state.fireCooldown = 0;
+        });
+        aimBtn.addEventListener('pointerup', e => {
+            e.preventDefault(); 
+            state.isAiming = false;
+            state.aimTransitionTime = 0;
+            state.targetScale = 0.03; state.targetX = 0.00; state.targetY = -0.35; state.targetZ = 0.20;
+            state.targetRotX = 0.01; state.targetRotY = -3.14; state.targetRotZ = 0.01;
+        });
+
+        // 跳跃/滑铲
+        document.getElementById('jumpBtn').addEventListener('pointerdown', e => {
+            e.preventDefault(); e.stopPropagation();
+            if (state.isSliding) {
+                state.isSliding = false; state.isSlideJumping = true;
+                state.slideJumpTime = 0; state.slideJumpStartY = camera.position.y;
+                state.slideJumpStartX = camera.position.x; state.slideJumpStartZ = camera.position.z;
+                state.slideJumpDirX = state.slideDirX; state.slideJumpDirZ = state.slideDirZ;
+                state.targetTilt = 0.05; return;
+            }
+            if (!state.isGrounded) return;
+            state.jumpVel = 7.5; state.isGrounded = false;
+        });
+
+        document.getElementById('slideBtn').addEventListener('pointerdown', e => {
+            e.preventDefault(); e.stopPropagation();
+            if (!state.isGrounded || state.isSliding || state.slideCooldown > 0 || state.isSlideJumping) return;
+            state.isSliding = true; state.slideDistance = 0; state.slideCooldown = 0.3;
+            state.targetTilt = 0.18; state.targetCamY = 0.35;
+            const fwd = new THREE.Vector3(); camera.getWorldDirection(fwd);
+            fwd.y = 0; fwd.normalize();
+            state.slideDirX = fwd.x; state.slideDirZ = fwd.z;
+            state.currentSpeed = state.baseSpeed * 2.5; state.targetFOV = 110;
+        });
+
+        // ===== 🟢 开火逻辑 =====
+        function performFire() {
+            if (!state.isAiming || state.aimTransitionTime < state.aimDuration) return;
+
+            const centerPos = new THREE.Vector3(0, -0.1, -0.5);
+            centerPos.applyQuaternion(camera.quaternion);
+            const muzzlePos = camera.position.clone().add(centerPos);
+            const forward = new THREE.Vector3(0, 0, -1);
+            forward.applyQuaternion(camera.quaternion);
+
+            createMuzzleFlash(muzzlePos, forward);
+            state.eulerX += 0.03;
+
+            const centerX = window.innerWidth / 2;
+            const centerY = window.innerHeight / 2;
+            raycaster.setFromCamera(new THREE.Vector2(
+                (centerX / window.innerWidth) * 2 - 1,
+                -(centerY / window.innerHeight) * 2 + 1
+            ), camera);
+
+            const targets = [];
+            enemies.forEach(enemy => {
+                if (enemy.userData.isDead) return;
+                enemy.children.forEach(child => { if (child.isMesh) targets.push(child); });
+            });
+            targets.push(gridFloor);
+
+            const intersects = raycaster.intersectObjects(targets);
+
+            if (intersects.length > 0) {
+                const hit = intersects[0];
+                const hitObj = hit.object;
+                const point = hit.point;
+                const normal = hit.face.normal.clone();
+                normal.transformDirection(hitObj.matrixWorld);
+
+                createBulletTrail(muzzlePos, point);
+                if (hitObj === gridFloor) createBulletHit(point, normal);
+
+                let parentGroup = null;
+                let obj = hitObj;
+                while (obj.parent) {
+                    if (obj.parent.userData && obj.parent.userData.isEnemy) {
+                        parentGroup = obj.parent; break;
+                    }
+                    obj = obj.parent;
+                }
+
+                if (parentGroup && !parentGroup.userData.isDead) {
+                    const part = hitObj.userData.bodyPart || 'torso';
+                    let damage = 0;
+                    if (part === 'head') damage = 100;
+                    else if (part === 'torso') damage = 25;
+                    else damage = 15;
+
+                    const data = parentGroup.userData;
+                    data.hp = Math.max(0, data.hp - damage);
+                    data.updateHP();
+
+                    if (data.hp <= 0 && !data.isDead) {
+                        data.isDead = true; data.deathTimer = 0;
+                        const dir = Math.random() > 0.5 ? -1 : 1;
+                        parentGroup.userData.ragdollDir = dir;
+                        parentGroup.userData.ragdollTimer = 0;
+                    }
+                }
+            } else {
+                const farPoint = new THREE.Vector3(0, 0, -100);
+                farPoint.applyQuaternion(camera.quaternion);
+                farPoint.add(camera.position);
+                createBulletTrail(muzzlePos, farPoint);
+            }
+        }
+
+        // ===== 🟢 加载器 =====
+        const loader = new GLTFLoader();
+        const loadingText = document.getElementById('loadingText');
+
+        // 自动判断：如果是本地 file:// 协议，用绝对路径；如果是静态网站，用同目录相对路径
+        let modelUrl = '';
+        if (window.location.protocol === 'file:') {
+            modelUrl = "file:///storage/emulated/0/Android/data/mark.via/cache/content/fps_smg9_animated.glb";
+        } else {
+            modelUrl = "./fps_smg9_animated.glb";
+        }
+
+        console.log('正在加载模型路径:', modelUrl);
+
+        loader.load(modelUrl, function (gltf) {
+            while (handGroup.children.length > 0) handGroup.remove(handGroup.children[0]);
+            gltf.scene.traverse((child) => {
+                if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; }
+            });
+            
+            const initScale = 0.03; const initX = 0.00; const initY = -0.35; const initZ = 0.20;
+            const initRotX = 0.01; const initRotY = -3.14; const initRotZ = 0.01;
+            state.currentScale = initScale; state.currentX = initX; state.currentY = initY; state.currentZ = initZ;
+            state.currentRotX = initRotX; state.currentRotY = initRotY; state.currentRotZ = initRotZ;
+            state.targetScale = initScale; state.targetX = initX; state.targetY = initY; state.targetZ = initZ;
+            state.targetRotX = initRotX; state.targetRotY = initRotY; state.targetRotZ = initRotZ;
+            
+            gltf.scene.scale.setScalar(initScale); 
+            gltf.scene.position.set(initX, initY, initZ);
+            gltf.scene.rotation.set(initRotX, initRotY, initRotZ);
+            handGroup.add(gltf.scene);
+            
+            loadingText.style.opacity = '0';
+            setTimeout(() => loadingText.style.display = 'none', 500);
+            console.log('✅ 模型加载成功！');
+        }, undefined, function (error) {
+            loadingText.textContent = '❌ 加载失败，请检查模型路径';
+            loadingText.style.color = '#ff5555';
+            console.error('加载失败:', error);
+        });
+
+        const clock = new THREE.Clock();
+
+        function update(dt) {
+            dt = Math.min(dt, 0.1);
+            const moving = Math.abs(state.moveX) > 0.05 || Math.abs(state.moveZ) > 0.05;
+
+            if (state.isAiming || state.aimTransitionTime < state.aimDuration) {
+                state.aimTransitionTime += dt;
+                const p = Math.min(state.aimTransitionTime / state.aimDuration, 1.0);
+                const ease = 1 - Math.pow(1 - p, 3);
+                state.currentScale += (state.targetScale - state.currentScale) * ease;
+                state.currentX += (state.targetX - state.currentX) * ease;
+                state.currentY += (state.targetY - state.currentY) * ease;
+                state.currentZ += (state.targetZ - state.currentZ) * ease;
+                state.currentRotX += (state.targetRotX - state.currentRotX) * ease;
+                state.currentRotY += (state.targetRotY - state.currentRotY) * ease;
+                state.currentRotZ += (state.targetRotZ - state.currentRotZ) * ease;
+            }
+            if (handGroup.children.length > 0) {
+                const model = handGroup.children[0];
+                model.scale.setScalar(state.currentScale);
+                model.position.set(state.currentX, state.currentY, state.currentZ);
+                model.rotation.set(state.currentRotX, state.currentRotY, state.currentRotZ);
+            }
+
+            if (state.isAiming && state.aimTransitionTime >= state.aimDuration) {
+                state.fireCooldown -= dt;
+                if (state.fireCooldown <= 0) {
+                    performFire();
+                    state.fireCooldown = state.fireRate;
+                }
+            } else {
+                state.fireCooldown = 0;
+            }
+
+            for (let i = bulletHoles.length - 1; i >= 0; i--) {
+                const h = bulletHoles[i];
+                h.userData.lifeTime -= dt;
+                if (h.userData.lifeTime <= 0) {
+                    scene.remove(h); h.geometry.dispose(); h.material.dispose();
+                    bulletHoles.splice(i, 1);
+                }
+            }
+            for (let i = muzzleFlashes.length - 1; i >= 0; i--) {
+                const f = muzzleFlashes[i];
+                f.userData.lifeTime -= dt;
+                f.children.forEach(sprite => { sprite.material.opacity -= dt * 5; });
+                if (f.userData.lifeTime <= 0) {
+                    scene.remove(f);
+                    f.children.forEach(sprite => { sprite.material.map.dispose(); sprite.material.dispose(); });
+                    muzzleFlashes.splice(i, 1);
+                }
+            }
+            for (let i = bulletTrails.length - 1; i >= 0; i--) {
+                const t = bulletTrails[i];
+                t.userData.lifeTime -= dt;
+                t.material.opacity -= dt * 4;
+                if (t.userData.lifeTime <= 0 || t.material.opacity <= 0) {
+                    scene.remove(t); t.geometry.dispose(); t.material.dispose();
+                    bulletTrails.splice(i, 1);
+                }
+            }
+
+            enemies.forEach(enemy => {
+                const data = enemy.userData;
+                if (data.isDead) {
+                    data.deathTimer += dt;
+                    if (data.deathTimer < 2.0) {
+                        const progress = data.deathTimer / 2.0;
+                        const dir = data.ragdollDir || 1;
+                        enemy.rotation.z = dir * progress * 0.5; 
+                        enemy.position.y -= progress * 0.2;
+                    } else {
+                        data.resetTimer += dt;
+                        if (data.resetTimer > 2.0) {
+                            data.isDead = false; data.hp = data.maxHp;
+                            data.deathTimer = 0; data.resetTimer = 0;
+                            enemy.rotation.z = 0;
+                            enemy.position.y = -10.0 + 7.5;
+                            data.updateHP();
+                        }
+                    }
+                }
+            });
+
+            if (state.isSlideJumping) {
+                state.slideJumpTime += dt;
+                const progress = state.slideJumpTime / state.slideJumpDuration;
+                if (progress >= 1.0) {
+                    state.isSlideJumping = false; state.isGrounded = true;
+                    state.currentCamY = 1.6; state.targetCamY = 1.6;
+                    state.targetTilt = 0; state.currentSpeed = state.baseSpeed;
+                    camera.position.y = 1.6;
+                } else {
+                    const heightCurve = Math.sin(progress * Math.PI) * state.slideJumpMaxHeight;
+                    let speedMultiplier;
+                    if (progress < 0.2) speedMultiplier = 1.0 + (progress / 0.2) * 1.0;
+                    else if (progress < 0.7) speedMultiplier = 2.0;
+                    else {
+                        const decelProgress = (progress - 0.7) / 0.3;
+                        speedMultiplier = 2.0 - decelProgress * 1.2;
+                    }
+                    state.currentSpeed = state.baseSpeed * speedMultiplier;
+                    const distanceIncrement = state.currentSpeed * dt;
+                    state.currentCamY = state.slideJumpStartY + heightCurve;
+                    camera.position.y = state.currentCamY;
+                    camera.position.x += state.slideJumpDirX * distanceIncrement;
+                    camera.position.z += state.slideJumpDirZ * distanceIncrement;
+                    state.targetTilt = 0.05 * (1 - progress);
+                }
+            }
+
+            if (state.isSliding && !state.isSlideJumping) {
+                state.slideDistance += state.currentSpeed * dt;
+                if (state.slideDistance >= state.slideMaxDistance) {
+                    state.isSliding = false; state.slideDistance = 0;
+                    state.targetTilt = 0; state.targetCamY = 1.6;
+                    state.currentSpeed = state.baseSpeed;
+                }
+            }
+            if (state.slideCooldown > 0) state.slideCooldown -= dt;
+
+            if (!state.isSliding && !state.isSlideJumping && state.isGrounded) {
+                const speedBase = state.isAiming ? state.baseSpeedAim : state.baseSpeed;
+                const targetSpd = moving ? speedBase : 0;
+                state.currentSpeed += (targetSpd - state.currentSpeed) * 8 * dt;
+            }
+
+            if (state.isSliding && !state.isSlideJumping) {
+                camera.position.x += state.slideDirX * state.currentSpeed * dt;
+                camera.position.z += state.slideDirZ * state.currentSpeed * dt;
+            } else if (!state.isSlideJumping && (moving || state.currentSpeed > 0.1)) {
+                const fwd = new THREE.Vector3();
+                camera.getWorldDirection(fwd);
+                fwd.y = 0; fwd.normalize();
+                const rgt = new THREE.Vector3().crossVectors(fwd, new THREE.Vector3(0, 1, 0)).normalize();
+                const mv = new THREE.Vector3().addScaledVector(fwd, -state.moveZ).addScaledVector(rgt, state.moveX);
+                if (mv.length() > 1) mv.normalize();
+                camera.position.x += mv.x * state.currentSpeed * dt;
+                camera.position.z += mv.z * state.currentSpeed * dt;
+            }
+
+            if (!state.isGrounded && !state.isSlideJumping) {
+                state.jumpVel -= 15 * dt;
+                state.currentCamY += state.jumpVel * dt;
+                if (state.currentCamY <= 1.6) {
+                    state.currentCamY = 1.6; state.jumpVel = 0;
+                    state.isGrounded = true; state.targetCamY = 1.6;
+                    state.slideCooldown = 0;
+                }
+            }
+
+            if (!state.isSlideJumping) {
+                if (state.isGrounded && !state.isSliding) state.currentCamY += (state.targetCamY - state.currentCamY) * 12 * dt;
+                else if (state.isSliding) state.currentCamY += (state.targetCamY - state.currentCamY) * 10 * dt;
+                camera.position.y = state.currentCamY;
+            }
+
+            state.currentTilt += (state.targetTilt - state.currentTilt) * 10 * dt;
+            camera.rotation.z = state.currentTilt;
+
+            camera.rotation.order = 'YXZ';
+            camera.rotation.y = state.eulerY;
+            camera.rotation.x = state.eulerX;
+
+            if (moving && state.isGrounded && !state.isSliding && !state.isSlideJumping) {
+                state.bobTimer += dt * 8;
+                const swing = Math.sin(state.bobTimer);
+                camera.position.x += swing * 0.025;
+                camera.position.y += (1 - Math.abs(swing)) * 0.015;
+            } else {
+                state.bobTimer *= 0.9;
+            }
+
+            if (moving && state.isGrounded && !state.isSliding && !state.isSlideJumping) {
+                const swing = Math.sin(state.bobTimer);
+                handGroup.position.x = 0.25 + swing * 0.03;
+                handGroup.position.y = -0.35 + (1 - Math.abs(swing)) * 0.015;
+            } else {
+                handGroup.position.x += (0.25 - handGroup.position.x) * 8 * dt;
+                handGroup.position.y += (-0.35 - handGroup.position.y) * 8 * dt;
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            update(clock.getDelta());
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
 </body>
 </html>
