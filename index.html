@@ -37,7 +37,7 @@
     <div id="loadingText">⏳ 检查缓存...</div>
     <div id="progressBar"><div class="fill" id="progressFill"></div></div>
     <div class="divider"></div>
-    <div id="crosshair">+</div>
+    <div id="crosshair"></div>
     <div id="ammoHUD"><span>[9999999]</span></div>
     <div id="killIconWrapper">
         <span class="kill-icon" id="killIcon">K</span>
@@ -57,6 +57,19 @@
     </script>
 
     <script type="module">
+// SharedWorker 降级处理
+if (typeof SharedWorker === 'undefined') {
+    window.SharedWorker = function() {
+        console.warn('SharedWorker 不支持，已降级');
+        return {
+            port: { postMessage: function() {}, onmessage: null, start: function() {} },
+            onerror: null,
+            addEventListener: function() {},
+            removeEventListener: function() {},
+            terminate: function() {}
+        };
+    };
+}
         import * as THREE from 'three';
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
         import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
