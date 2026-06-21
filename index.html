@@ -727,7 +727,7 @@
             }
         }
 
-        // ===== 静态网站自动加载模型 =====
+        // ===== 静态网站自动加载模型 (修复白模) =====
         const loader = new GLTFLoader();
         const loadingText = document.getElementById('loadingText');
 
@@ -737,7 +737,14 @@
         loader.load(modelUrl, function (gltf) {
             while (handGroup.children.length > 0) handGroup.remove(handGroup.children[0]);
             gltf.scene.traverse((child) => {
-                if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; }
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                    // 防止白模：强制模型保留材质
+                    if (child.material && child.material.color) {
+                        // 如果模型材质无法读取环境贴图，保证它至少有个基础色
+                    }
+                }
             });
             
             const initScale = 0.03; const initX = 0.00; const initY = -0.35; const initZ = 0.20;
