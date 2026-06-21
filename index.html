@@ -29,12 +29,15 @@
         .damage-float { position: fixed; pointer-events: none; font-weight: bold; font-family: 'Arial', sans-serif; text-shadow: 0 0 10px rgba(0,0,0,0.9), 0 0 4px rgba(0,0,0,0.8); z-index: 40; transition: all 1.2s ease-out; opacity: 1; transform: translateY(0) scale(1); }
         .damage-float.fade { opacity: 0; transform: translateY(-80px) scale(1.3); }
         #loadingText { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 999; color: #fff; font-size: 18px; font-family: sans-serif; background: rgba(0,0,0,0.8); padding: 15px 30px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2); pointer-events: none; transition: opacity 0.5s; }
+        #progressBar { position: fixed; top: 58%; left: 50%; transform: translate(-50%, 0); width: 60%; max-width: 300px; height: 6px; background: rgba(255,255,255,0.15); border-radius: 3px; z-index: 999; overflow: hidden; display: none; }
+        #progressBar .fill { height: 100%; width: 0%; background: linear-gradient(90deg, #44ff88, #44aaff); border-radius: 3px; transition: width 0.3s; }
     </style>
 </head>
 <body>
-    <div id="loadingText">⏳ 加载模型中...</div>
+    <div id="loadingText">⏳ 检查缓存...</div>
+    <div id="progressBar"><div class="fill" id="progressFill"></div></div>
     <div class="divider"></div>
-    <div id="crosshair">+</div>
+    <div id="crosshair"></div>
     <div id="ammoHUD"><span>[9999999]</span></div>
     <div id="killIconWrapper">
         <span class="kill-icon" id="killIcon">K</span>
@@ -188,6 +191,9 @@
         // ==================== UI 元素 ====================
         const killIcon = document.getElementById('killIcon');
         const killStreak = document.getElementById('killStreak');
+        const loadingText = document.getElementById('loadingText');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
 
         // ==================== Three.js 场景 ====================
         const scene = new THREE.Scene();
@@ -715,7 +721,6 @@
                         }
                         lastKillTime = now;
 
-                        // 更新击杀图标（在弹药框上方）
                         updateKillUI(isHeadshot, killStreakCount);
                     }
                 }
@@ -727,49 +732,186 @@
             }
         }
 
-        // ===== 静态网站自动加载模型 (修复白模) =====
+        // ============================================================
+        // ===== 核心：带缓存的 GLB 加载器（jsDelivr CDN 加速） =====
+        // ============================================================
         const loader = new GLTFLoader();
-        const loadingText = document.getElementById('loadingText');
+        // ✅ 使用 jsDelivr CDN 加速（仓库已公开）
+        const MODEL_URL = "https://cdn.jsdelivr.net/gh/DarkStar02GG/html@main/fps_smg9_animated.glb";
+        const CACHE_NAME = 'fps_model_v2';
+        const CACHE_KEY = 'fps_smg9_animated.glb';
 
-        // 同目录下找模型文件
-        const modelUrl = "./fps_smg9_animated.glb";
+        // 模型加载完成后挂载到场景
+        function onModelLoaded(gltf) {
+            // 清空 handGroup 原有内容
+            while (handGroup.children.length > 0) {
+                const child = handGroup.children[0];
+                if (child.geometry) child.geometry.dispose();
+                if (child.material) child.material.dispose();
+                handGroup.remove(child);
+            }
 
-        loader.load(modelUrl, function (gltf) {
-            while (handGroup.children.length > 0) handGroup.remove(handGroup.children[0]);
             gltf.scene.traverse((child) => {
                 if (child.isMesh) {
                     child.castShadow = true;
                     child.receiveShadow = true;
-                    // 防止白模：强制模型保留材质
-                    if (child.material && child.material.color) {
-                        // 如果模型材质无法读取环境贴图，保证它至少有个基础色
-                    }
                 }
             });
-            
-            const initScale = 0.03; const initX = 0.00; const initY = -0.35; const initZ = 0.20;
-            const initRotX = 0.01; const initRotY = -3.14; const initRotZ = 0.01;
-            state.currentScale = initScale; state.currentX = initX; state.currentY = initY; state.currentZ = initZ;
-            state.currentRotX = initRotX; state.currentRotY = initRotY; state.currentRotZ = initRotZ;
-            state.targetScale = initScale; state.targetX = initX; state.targetY = initY; state.targetZ = initZ;
-            state.targetRotX = initRotX; state.targetRotY = initRotY; state.targetRotZ = initRotZ;
-            
-            gltf.scene.scale.setScalar(initScale); 
+
+            const initScale = 0.03;
+            const initX = 0.00;
+            const initY = -0.35;
+            const initZ = 0.20;
+            const initRotX = 0.01;
+            const initRotY = -3.14;
+            const initRotZ = 0.01;
+
+            state.currentScale = initScale;
+            state.currentX = initX;
+            state.currentY = initY;
+            state.currentZ = initZ;
+            state.currentRotX = initRotX;
+            state.currentRotY = initRotY;
+            state.currentRotZ = initRotZ;
+            state.targetScale = initScale;
+            state.targetX = initX;
+            state.targetY = initY;
+            state.targetZ = initZ;
+            state.targetRotX = initRotX;
+            state.targetRotY = initRotY;
+            state.targetRotZ = initRotZ;
+
+            gltf.scene.scale.setScalar(initScale);
             gltf.scene.position.set(initX, initY, initZ);
             gltf.scene.rotation.set(initRotX, initRotY, initRotZ);
             handGroup.add(gltf.scene);
-            
-            loadingText.style.opacity = '0';
-            setTimeout(() => loadingText.style.display = 'none', 500);
-        }, function (xhr) {
-            // 进度显示
-            const percent = Math.round((xhr.loaded / xhr.total) * 100);
-            loadingText.textContent = `⏳ 加载中 ${percent}%`;
-        }, function (error) {
-            loadingText.textContent = '❌ 加载失败，请检查同目录下是否有 fps_smg9_animated.glb';
-            console.error('加载失败:', error);
-        });
 
+            loadingText.style.opacity = '0';
+            progressBar.style.display = 'none';
+            setTimeout(() => {
+                loadingText.style.display = 'none';
+            }, 500);
+        }
+
+        // 显示进度
+        function updateProgress(percent) {
+            progressBar.style.display = 'block';
+            progressFill.style.width = Math.min(100, percent) + '%';
+            loadingText.textContent = `⏳ 下载中 ${Math.min(100, Math.round(percent))}%`;
+        }
+
+        // 主加载函数：先查缓存，没有再下载
+        async function loadModelWithCache() {
+            try {
+                // 1. 尝试打开缓存
+                const cache = await caches.open(CACHE_NAME);
+                
+                // 2. 检查缓存中是否有模型
+                const cachedResponse = await cache.match(CACHE_KEY);
+                
+                if (cachedResponse) {
+                    // ✅ 有缓存 → 直接加载（秒开）
+                    loadingText.textContent = '📦 从缓存加载...';
+                    const arrayBuffer = await cachedResponse.arrayBuffer();
+                    const blob = new Blob([arrayBuffer], { type: 'model/gltf-binary' });
+                    const url = URL.createObjectURL(blob);
+                    
+                    loader.load(url, function(gltf) {
+                        onModelLoaded(gltf);
+                        URL.revokeObjectURL(url);
+                    }, undefined, function(err) {
+                        loadingText.textContent = '❌ 缓存损坏，重新下载...';
+                        console.error('缓存加载失败:', err);
+                        cache.delete(CACHE_KEY);
+                        // 递归调用重新下载
+                        downloadAndCache();
+                    });
+                    return;
+                }
+
+                // ❌ 无缓存 → 下载
+                await downloadAndCache();
+
+            } catch (error) {
+                console.error('缓存操作失败:', error);
+                // 降级：直接下载（不缓存）
+                loadingText.textContent = '⚠️ 缓存不可用，直接下载...';
+                progressBar.style.display = 'block';
+                loader.load(MODEL_URL, function(gltf) {
+                    onModelLoaded(gltf);
+                }, function(xhr) {
+                    const percent = (xhr.loaded / xhr.total) * 100;
+                    updateProgress(percent);
+                }, function(err) {
+                    loadingText.textContent = '❌ 下载失败，请检查网络';
+                    console.error('下载失败:', err);
+                });
+            }
+        }
+
+        // 下载并存入缓存
+        async function downloadAndCache() {
+            try {
+                loadingText.textContent = '⏳ 连接服务器...';
+                progressBar.style.display = 'block';
+                progressFill.style.width = '0%';
+
+                const response = await fetch(MODEL_URL);
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+
+                const contentLength = response.headers.get('content-length');
+                const total = parseInt(contentLength, 10);
+                let loaded = 0;
+
+                const reader = response.body.getReader();
+                const chunks = [];
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    chunks.push(value);
+                    loaded += value.length;
+                    if (total) {
+                        const percent = (loaded / total) * 100;
+                        updateProgress(percent);
+                    } else {
+                        loadingText.textContent = `⏳ 下载中 ${Math.round(loaded / 1024)}KB`;
+                    }
+                }
+
+                // 合并数据
+                const arrayBuffer = await new Blob(chunks).arrayBuffer();
+                loadingText.textContent = '💾 保存到缓存...';
+
+                // 存入缓存
+                const cache = await caches.open(CACHE_NAME);
+                const cachedResponse = new Response(arrayBuffer, {
+                    headers: { 'Content-Type': 'model/gltf-binary' }
+                });
+                await cache.put(CACHE_KEY, cachedResponse.clone());
+
+                // 加载到场景
+                const blob = new Blob([arrayBuffer], { type: 'model/gltf-binary' });
+                const url = URL.createObjectURL(blob);
+                loader.load(url, function(gltf) {
+                    onModelLoaded(gltf);
+                    URL.revokeObjectURL(url);
+                }, undefined, function(err) {
+                    loadingText.textContent = '❌ 加载失败';
+                    console.error('加载失败:', err);
+                });
+
+            } catch (error) {
+                loadingText.textContent = '❌ 下载失败: ' + error.message;
+                console.error('下载失败:', error);
+                progressBar.style.display = 'none';
+            }
+        }
+
+        // ===== 启动加载 =====
+        loadModelWithCache();
+
+        // ===== 动画循环 =====
         const clock = new THREE.Clock();
 
         function update(dt) {
