@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>第一人称射击 - 二合一加载版</title>
+    <title>第一人称射击 - 音效完整版</title>
     <style>
         *{margin:0;padding:0;box-sizing:border-box;user-select:none;-webkit-tap-highlight-color:transparent}
         body{background:#000;width:100vw;height:100vh;height:100dvh;overflow:hidden;position:fixed;top:0;left:0;touch-action:none}
@@ -21,10 +21,17 @@
         #crosshair { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 25; pointer-events: none; color: rgba(255, 255, 255, 0.9); font-size: 30px; font-weight: 100; font-family: monospace; text-shadow: 0 0 5px rgba(0,0,0,0.8); }
         #ammoHUD { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); z-index: 30; color: #fff; font-size: 22px; font-weight: bold; font-family: monospace; text-shadow: 0 0 10px rgba(0,0,0,0.8); pointer-events: none; background: rgba(0,0,0,0.5); padding: 5px 25px; border-radius: 25px; border: 1px solid rgba(255,255,255,0.2); }
         #loadingText { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 999; color: #fff; font-size: 18px; font-family: sans-serif; background: rgba(0,0,0,0.8); padding: 15px 30px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2); pointer-events: none; transition: opacity 0.5s; }
+        
+        /* 🟢 伤害与击杀提示动画 */
+        #damageIndictor { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 20; pointer-events: none; color: #ff3333; font-size: 40px; font-weight: bold; font-family: sans-serif; opacity: 0; transition: all 0.1s; text-shadow: 0 0 20px rgba(255,0,0,0.8); }
+        #killIndicator { position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%); z-index: 20; pointer-events: none; color: #ffaa00; font-size: 35px; font-weight: bold; font-family: sans-serif; opacity: 0; transition: all 0.2s; text-shadow: 0 0 30px rgba(255,170,0,0.8); }
+        .indicator-show { opacity: 1 !important; transform: translate(-50%, -70%) !important; }
     </style>
 </head>
 <body>
-    <div id="loadingText">⏳ 正在加载武器模型...</div>
+    <div id="loadingText">⏳ 正在加载战斗资源...</div>
+    <div id="damageIndictor">💥 -25</div>
+    <div id="killIndicator">☠️ 击杀 +100</div>
 
     <div class="divider"></div>
     <div id="crosshair">+</div>
@@ -47,6 +54,48 @@
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
         import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 
+        // ==================== 🟢 音效系统 ====================
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound(freq, duration, type='sine', volume=0.3) {
+            try {
+                const osc = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+                osc.type = type;
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(volume, audioContext.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioContext.destination);
+                osc.start();
+                osc.stop(audioContext.currentTime + duration);
+            } catch(e) {}
+        }
+
+        function playHitSound() { playSound(800, 0.1, 'square', 0.2); }
+        function playKillSound() { playSound(600, 0.1, 'sawtooth', 0.4); setTimeout(() => playSound(900, 0.15, 'sawtooth', 0.3), 100); }
+        function playFireSound() { playSound(150, 0.05, 'sawtooth', 0.3); }
+
+        // ==================== 🟢 UI 反馈系统 ====================
+        const dmgEl = document.getElementById('damageIndictor');
+        const killEl = document.getElementById('killIndicator');
+        let dmgTimer = null, killTimer = null;
+
+        function showDamage(dmg) {
+            dmgEl.textContent = `💥 -${dmg}`;
+            dmgEl.classList.add('indicator-show');
+            clearTimeout(dmgTimer);
+            dmgTimer = setTimeout(() => dmgEl.classList.remove('indicator-show'), 200);
+        }
+
+        function showKill() {
+            killEl.textContent = `☠️ 击杀 +100`;
+            killEl.classList.add('indicator-show');
+            clearTimeout(killTimer);
+            killTimer = setTimeout(() => killEl.classList.remove('indicator-show'), 800);
+        }
+
+        // ==================== 🟢 场景渲染 ====================
         const scene = new THREE.Scene();
         scene.background = new THREE.Color('#12121f');
         scene.fog = new THREE.Fog('#12121f', 8, 40);
@@ -91,25 +140,17 @@
         const ambient = new THREE.AmbientLight('#404060', 0.4);
         scene.add(ambient);
 
-        // 透明空气地板
-        const invisibleFloor = new THREE.Mesh(
-            new THREE.PlaneGeometry(80, 80), 
-            new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 })
-        );
+        // 地面
+        const invisibleFloor = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 }));
         invisibleFloor.rotation.x = -Math.PI / 2;
         invisibleFloor.position.y = 0;
         scene.add(invisibleFloor);
 
-        // 深渊灰色地面 (保持-10米)
-        const gridFloor = new THREE.Mesh(
-            new THREE.PlaneGeometry(80, 80), 
-            new THREE.MeshStandardMaterial({ color: '#333344', roughness: 0.8 })
-        );
+        const gridFloor = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), new THREE.MeshStandardMaterial({ color: '#333344', roughness: 0.8 }));
         gridFloor.rotation.x = -Math.PI / 2;
         gridFloor.position.y = -10.0; 
         gridFloor.receiveShadow = true;
         scene.add(gridFloor);
-        
         const gridHelper = new THREE.GridHelper(80, 80, '#444455', '#222233');
         gridHelper.position.y = -10.0;
         scene.add(gridHelper);
@@ -207,20 +248,14 @@
 
         function createMuzzleFlash(pos, dir) {
             const flashGroup = new THREE.Group();
-            const coreMat = new THREE.SpriteMaterial({
-                map: new THREE.CanvasTexture(generateSparkTexture()),
-                transparent: true, opacity: 1, blending: THREE.AdditiveBlending
-            });
+            const coreMat = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(generateSparkTexture()), transparent: true, opacity: 1, blending: THREE.AdditiveBlending });
             const core = new THREE.Sprite(coreMat);
             core.scale.set(0.4, 0.4, 1);
             flashGroup.add(core);
 
             for (let i = 0; i < 5; i++) {
                 const size = 0.15 + Math.random() * 0.2;
-                const mat = new THREE.SpriteMaterial({
-                    map: new THREE.CanvasTexture(generateSparkTexture()),
-                    transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending
-                });
+                const mat = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(generateSparkTexture()), transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending });
                 const sprite = new THREE.Sprite(mat);
                 const angle = Math.random() * Math.PI * 2;
                 const radius = 0.15 + Math.random() * 0.1;
@@ -422,6 +457,7 @@
             forward.applyQuaternion(camera.quaternion);
 
             createMuzzleFlash(muzzlePos, forward);
+            playFireSound();
             state.eulerX += 0.03;
 
             const centerX = window.innerWidth / 2;
@@ -470,8 +506,13 @@
                     data.hp = Math.max(0, data.hp - damage);
                     data.updateHP();
 
+                    playHitSound();
+                    showDamage(damage);
+
                     if (data.hp <= 0 && !data.isDead) {
                         data.isDead = true; data.deathTimer = 0;
+                        playKillSound();
+                        showKill();
                         const dir = Math.random() > 0.5 ? -1 : 1;
                         parentGroup.userData.ragdollDir = dir;
                         parentGroup.userData.ragdollTimer = 0;
@@ -485,11 +526,11 @@
             }
         }
 
-        // ===== 🟢 加载器 =====
+        // ==================== 🟢 模型加载器 ====================
         const loader = new GLTFLoader();
         const loadingText = document.getElementById('loadingText');
 
-        // 自动判断：如果是本地 file:// 协议，用绝对路径；如果是静态网站，用同目录相对路径
+        // 二合一自动判断路径
         let modelUrl = '';
         if (window.location.protocol === 'file:') {
             modelUrl = "file:///storage/emulated/0/Android/data/mark.via/cache/content/fps_smg9_animated.glb";
@@ -497,7 +538,7 @@
             modelUrl = "./fps_smg9_animated.glb";
         }
 
-        console.log('正在加载模型路径:', modelUrl);
+        console.log('正在加载模型:', modelUrl);
 
         loader.load(modelUrl, function (gltf) {
             while (handGroup.children.length > 0) handGroup.remove(handGroup.children[0]);
@@ -520,12 +561,17 @@
             loadingText.style.opacity = '0';
             setTimeout(() => loadingText.style.display = 'none', 500);
             console.log('✅ 模型加载成功！');
-        }, undefined, function (error) {
-            loadingText.textContent = '❌ 加载失败，请检查模型路径';
+        }, function (xhr) {
+            // 下载进度条
+            const percent = Math.round((xhr.loaded / xhr.total) * 100);
+            loadingText.textContent = `⏳ 加载中 ${percent}%`;
+        }, function (error) {
+            loadingText.textContent = '❌ 加载失败，请检查网络';
             loadingText.style.color = '#ff5555';
             console.error('加载失败:', error);
         });
 
+        // ===== 游戏循环 =====
         const clock = new THREE.Clock();
 
         function update(dt) {
