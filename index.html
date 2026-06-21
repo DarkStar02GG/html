@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>第一人称射击 - 音效完整版</title>
+    <title>第一人称射击 - 静态网站版</title>
     <style>
         *{margin:0;padding:0;box-sizing:border-box;user-select:none;-webkit-tap-highlight-color:transparent}
         body{background:#000;width:100vw;height:100vh;height:100dvh;overflow:hidden;position:fixed;top:0;left:0;touch-action:none}
@@ -19,31 +19,35 @@
         .btn-aim{position:fixed;bottom:175px;right:30px;width:70px;height:70px;border-radius:50%;background:rgba(255,50,50,0.2);border:2px solid rgba(255,50,50,0.45);color:#ff5555;font-size:12px;font-weight:bold;display:flex;align-items:center;justify-content:center;z-index:10;touch-action:none}
         .btn-aim:active{background:rgba(255,50,50,0.5)}
         #crosshair { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 25; pointer-events: none; color: rgba(255, 255, 255, 0.9); font-size: 30px; font-weight: 100; font-family: monospace; text-shadow: 0 0 5px rgba(0,0,0,0.8); }
-        #ammoHUD { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); z-index: 30; color: #fff; font-size: 22px; font-weight: bold; font-family: monospace; text-shadow: 0 0 10px rgba(0,0,0,0.8); pointer-events: none; background: rgba(0,0,0,0.5); padding: 5px 25px; border-radius: 25px; border: 1px solid rgba(255,255,255,0.2); }
+        #ammoHUD { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); z-index: 30; color: #fff; font-size: 22px; font-weight: bold; font-family: monospace; text-shadow: 0 0 10px rgba(0,0,0,0.8); pointer-events: none; background: rgba(0,0,0,0.5); padding: 5px 25px; border-radius: 25px; border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; gap: 12px; }
+        #killIconWrapper { position: fixed; bottom: 82px; left: 50%; transform: translateX(-50%); z-index: 31; pointer-events: none; display: flex; align-items: center; justify-content: center; gap: 6px; background: rgba(0,0,0,0.25); padding: 2px 10px; border-radius: 10px; backdrop-filter: blur(2px); border: 1px solid rgba(255,255,255,0.06); min-height: 20px; min-width: 30px; }
+        #killIconWrapper .kill-icon { font-size: 13px; color: #ffdd44; text-shadow: 0 0 8px rgba(255,200,0,0.3); display: none; line-height: 1; font-weight: bold; }
+        #killIconWrapper .kill-icon.show { display: inline; }
+        #killIconWrapper .kill-icon.headshot { color: #ff3333; text-shadow: 0 0 12px rgba(255,0,0,0.5); }
+        #killIconWrapper .kill-streak { font-size: 11px; color: #ffaa00; text-shadow: 0 0 10px rgba(255,170,0,0.4); display: none; font-weight: bold; line-height: 1; }
+        #killIconWrapper .kill-streak.show { display: inline; }
+        .damage-float { position: fixed; pointer-events: none; font-weight: bold; font-family: 'Arial', sans-serif; text-shadow: 0 0 10px rgba(0,0,0,0.9), 0 0 4px rgba(0,0,0,0.8); z-index: 40; transition: all 1.2s ease-out; opacity: 1; transform: translateY(0) scale(1); }
+        .damage-float.fade { opacity: 0; transform: translateY(-80px) scale(1.3); }
         #loadingText { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 999; color: #fff; font-size: 18px; font-family: sans-serif; background: rgba(0,0,0,0.8); padding: 15px 30px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2); pointer-events: none; transition: opacity 0.5s; }
-        
-        /* 🟢 伤害与击杀提示动画 */
-        #damageIndictor { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 20; pointer-events: none; color: #ff3333; font-size: 40px; font-weight: bold; font-family: sans-serif; opacity: 0; transition: all 0.1s; text-shadow: 0 0 20px rgba(255,0,0,0.8); }
-        #killIndicator { position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%); z-index: 20; pointer-events: none; color: #ffaa00; font-size: 35px; font-weight: bold; font-family: sans-serif; opacity: 0; transition: all 0.2s; text-shadow: 0 0 30px rgba(255,170,0,0.8); }
-        .indicator-show { opacity: 1 !important; transform: translate(-50%, -70%) !important; }
     </style>
 </head>
 <body>
-    <div id="loadingText">⏳ 正在加载战斗资源...</div>
-    <div id="damageIndictor">💥 -25</div>
-    <div id="killIndicator">☠️ 击杀 +100</div>
-
+    <div id="loadingText">⏳ 加载模型中...</div>
     <div class="divider"></div>
     <div id="crosshair">+</div>
-    <div id="ammoHUD">🔫 9999999</div>
+    <div id="ammoHUD"><span>[9999999]</span></div>
+    <div id="killIconWrapper">
+        <span class="kill-icon" id="killIcon">K</span>
+        <span class="kill-streak" id="killStreak">x2</span>
+    </div>
 
     <div class="joystick-zone" id="joystickZone">
         <div class="joystick-base"></div>
         <div class="joystick-thumb" id="joystickThumb"></div>
     </div>
-    <button class="btn-jump" id="jumpBtn">🦘</button>
-    <button class="btn-slide" id="slideBtn">🤸</button>
-    <button class="btn-aim" id="aimBtn">🎯</button>
+    <button class="btn-jump" id="jumpBtn">跳</button>
+    <button class="btn-slide" id="slideBtn">滑</button>
+    <button class="btn-aim" id="aimBtn">瞄准</button>
 
     <script type="importmap">
         { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
@@ -54,48 +58,138 @@
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
         import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
 
-        // ==================== 🟢 音效系统 ====================
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-
-        function playSound(freq, duration, type='sine', volume=0.3) {
-            try {
-                const osc = audioContext.createOscillator();
-                const gain = audioContext.createGain();
-                osc.type = type;
-                osc.frequency.value = freq;
-                gain.gain.setValueAtTime(volume, audioContext.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
-                osc.connect(gain);
-                gain.connect(audioContext.destination);
-                osc.start();
-                osc.stop(audioContext.currentTime + duration);
-            } catch(e) {}
+        // ==================== 音效系统 ====================
+        class SoundFX {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+                try {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                } catch (e) {
+                    this.enabled = false;
+                }
+            }
+            resume() {
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+            playFire() {
+                if (!this.enabled || !this.ctx) return;
+                this.resume();
+                const now = this.ctx.currentTime;
+                const bufferSize = this.ctx.sampleRate * 0.06;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    const env = Math.exp(-i / (bufferSize * 0.3));
+                    data[i] = (Math.random() * 2 - 1) * env;
+                }
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.5, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.06);
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'highpass';
+                filter.frequency.value = 800;
+                filter.Q.value = 0.5;
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+                noise.start(now);
+                noise.stop(now + 0.06);
+                const osc = this.ctx.createOscillator();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(1200, now);
+                osc.frequency.exponentialRampToValueAtTime(400, now + 0.04);
+                const g2 = this.ctx.createGain();
+                g2.gain.setValueAtTime(0.2, now);
+                g2.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+                const filter2 = this.ctx.createBiquadFilter();
+                filter2.type = 'bandpass';
+                filter2.frequency.value = 2000;
+                filter2.Q.value = 1;
+                osc.connect(filter2);
+                filter2.connect(g2);
+                g2.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.04);
+            }
+            playFootstep() {
+                if (!this.enabled || !this.ctx) return;
+                this.resume();
+                const now = this.ctx.currentTime;
+                const bufferSize = this.ctx.sampleRate * 0.12;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    const env = Math.sin(i / bufferSize * Math.PI) * 0.9;
+                    const noise = (Math.random() * 2 - 1) * 0.8;
+                    data[i] = (Math.sin(i * 0.08) * 0.4 + noise * 0.6) * env;
+                }
+                const source = this.ctx.createBufferSource();
+                source.buffer = buffer;
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.45, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.value = 400;
+                filter.Q.value = 1.2;
+                source.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+                source.start(now);
+                source.stop(now + 0.12);
+            }
+            playSlide() {
+                if (!this.enabled || !this.ctx) return;
+                this.resume();
+                const now = this.ctx.currentTime;
+                const bufferSize = this.ctx.sampleRate * 0.25;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    const env = 1 - (i / bufferSize);
+                    const noise = (Math.random() * 2 - 1) * 0.9;
+                    data[i] = noise * env * 0.8;
+                }
+                const noiseSrc = this.ctx.createBufferSource();
+                noiseSrc.buffer = buffer;
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.35, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.value = 600;
+                filter.Q.value = 0.8;
+                noiseSrc.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+                noiseSrc.start(now);
+                noiseSrc.stop(now + 0.25);
+                const osc = this.ctx.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.exponentialRampToValueAtTime(80, now + 0.15);
+                const g2 = this.ctx.createGain();
+                g2.gain.setValueAtTime(0.3, now);
+                g2.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+                osc.connect(g2);
+                g2.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.15);
+            }
         }
 
-        function playHitSound() { playSound(800, 0.1, 'square', 0.2); }
-        function playKillSound() { playSound(600, 0.1, 'sawtooth', 0.4); setTimeout(() => playSound(900, 0.15, 'sawtooth', 0.3), 100); }
-        function playFireSound() { playSound(150, 0.05, 'sawtooth', 0.3); }
+        const sound = new SoundFX();
 
-        // ==================== 🟢 UI 反馈系统 ====================
-        const dmgEl = document.getElementById('damageIndictor');
-        const killEl = document.getElementById('killIndicator');
-        let dmgTimer = null, killTimer = null;
+        // ==================== UI 元素 ====================
+        const killIcon = document.getElementById('killIcon');
+        const killStreak = document.getElementById('killStreak');
 
-        function showDamage(dmg) {
-            dmgEl.textContent = `💥 -${dmg}`;
-            dmgEl.classList.add('indicator-show');
-            clearTimeout(dmgTimer);
-            dmgTimer = setTimeout(() => dmgEl.classList.remove('indicator-show'), 200);
-        }
-
-        function showKill() {
-            killEl.textContent = `☠️ 击杀 +100`;
-            killEl.classList.add('indicator-show');
-            clearTimeout(killTimer);
-            killTimer = setTimeout(() => killEl.classList.remove('indicator-show'), 800);
-        }
-
-        // ==================== 🟢 场景渲染 ====================
+        // ==================== Three.js 场景 ====================
         const scene = new THREE.Scene();
         scene.background = new THREE.Color('#12121f');
         scene.fog = new THREE.Fog('#12121f', 8, 40);
@@ -115,6 +209,7 @@
         renderer.outputColorSpace = THREE.SRGBColorSpace;
         document.body.appendChild(renderer.domElement);
 
+        // 环境
         const rgbeLoader = new RGBELoader();
         rgbeLoader.load('https://threejs.org/examples/textures/equirectangular/venice_sunset_1k.hdr', (texture) => {
             texture.mapping = THREE.EquirectangularReflectionMapping;
@@ -141,24 +236,80 @@
         scene.add(ambient);
 
         // 地面
-        const invisibleFloor = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 }));
+        const invisibleFloor = new THREE.Mesh(
+            new THREE.PlaneGeometry(80, 80), 
+            new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 })
+        );
         invisibleFloor.rotation.x = -Math.PI / 2;
         invisibleFloor.position.y = 0;
         scene.add(invisibleFloor);
 
-        const gridFloor = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), new THREE.MeshStandardMaterial({ color: '#333344', roughness: 0.8 }));
+        const gridFloor = new THREE.Mesh(
+            new THREE.PlaneGeometry(80, 80), 
+            new THREE.MeshStandardMaterial({ color: '#333344', roughness: 0.8 })
+        );
         gridFloor.rotation.x = -Math.PI / 2;
         gridFloor.position.y = -10.0; 
         gridFloor.receiveShadow = true;
         scene.add(gridFloor);
+        
         const gridHelper = new THREE.GridHelper(80, 80, '#444455', '#222233');
         gridHelper.position.y = -10.0;
         scene.add(gridHelper);
 
-        // ===== 15米巨人 =====
+        // ===== 敌人 =====
         const enemyMat = new THREE.MeshStandardMaterial({ color: '#44aa88', roughness: 0.6 });
         const enemies = [];
         const raycaster = new THREE.Raycaster();
+
+        // 连杀系统
+        let killStreakCount = 0;
+        let lastKillTime = 0;
+        const STREAK_WINDOW = 5.0;
+
+        function updateKillUI(isHeadshot, streak) {
+            if (isHeadshot) {
+                killIcon.textContent = 'H';
+                killIcon.className = 'kill-icon show headshot';
+            } else {
+                killIcon.textContent = 'K';
+                killIcon.className = 'kill-icon show';
+            }
+            if (streak >= 2) {
+                killStreak.textContent = 'x' + streak;
+                killStreak.className = 'kill-streak show';
+            } else {
+                killStreak.className = 'kill-streak';
+            }
+        }
+
+        // 伤害跳字
+        function createDamageFloat(worldPos, damage, isHeadshot) {
+            const vector = worldPos.clone().add(new THREE.Vector3(0, 2.0, 0));
+            vector.project(camera);
+            const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
+            const y = (-vector.y * 0.5 + 0.5) * window.innerHeight;
+            if (vector.z > 1 || x < 0 || x > window.innerWidth || y < 0 || y > window.innerHeight) return;
+            const el = document.createElement('div');
+            el.className = 'damage-float';
+            const color = isHeadshot ? '#ff3333' : '#ffdd44';
+            const size = isHeadshot ? '28px' : '22px';
+            el.style.color = color;
+            el.style.fontSize = size;
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            el.textContent = isHeadshot ? 'H ' + damage : '-' + damage;
+            if (isHeadshot) {
+                el.style.textShadow = '0 0 20px rgba(255,0,0,0.8), 0 0 40px rgba(255,0,0,0.4)';
+            }
+            document.body.appendChild(el);
+            requestAnimationFrame(() => {
+                el.classList.add('fade');
+            });
+            setTimeout(() => {
+                if (el.parentNode) el.parentNode.removeChild(el);
+            }, 1200);
+        }
 
         function createEnemy(index) {
             const group = new THREE.Group();
@@ -193,7 +344,11 @@
             legR.castShadow = true; legR.receiveShadow = true;
             group.add(legR);
 
-            group.userData = { isEnemy: true, hp: 100, maxHp: 100, index: index, isDead: false, deathTimer: 0, resetTimer: 0, torso: torso, head: head, legL: legL, legR: legR };
+            group.userData = {
+                isEnemy: true, hp: 100, maxHp: 100, index: index,
+                isDead: false, deathTimer: 0, resetTimer: 0,
+                torso: torso, head: head, legL: legL, legR: legR
+            };
 
             const angle = Math.random() * Math.PI * 2;
             const radius = 5 + Math.random() * 10;
@@ -248,14 +403,20 @@
 
         function createMuzzleFlash(pos, dir) {
             const flashGroup = new THREE.Group();
-            const coreMat = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(generateSparkTexture()), transparent: true, opacity: 1, blending: THREE.AdditiveBlending });
+            const coreMat = new THREE.SpriteMaterial({
+                map: new THREE.CanvasTexture(generateSparkTexture()),
+                transparent: true, opacity: 1, blending: THREE.AdditiveBlending
+            });
             const core = new THREE.Sprite(coreMat);
             core.scale.set(0.4, 0.4, 1);
             flashGroup.add(core);
 
             for (let i = 0; i < 5; i++) {
                 const size = 0.15 + Math.random() * 0.2;
-                const mat = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(generateSparkTexture()), transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending });
+                const mat = new THREE.SpriteMaterial({
+                    map: new THREE.CanvasTexture(generateSparkTexture()),
+                    transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending
+                });
                 const sprite = new THREE.Sprite(mat);
                 const angle = Math.random() * Math.PI * 2;
                 const radius = 0.15 + Math.random() * 0.1;
@@ -319,6 +480,10 @@
             targetRotX: 0.01, targetRotY: -3.14, targetRotZ: 0.01,
             fireCooldown: 0,
             fireRate: 0.08,
+            footstepTimer: 0,
+            footstepInterval: 0.35,
+            wasMoving: false,
+            slideSoundPlayed: false,
         };
 
         const lookSensitivity = 0.013;
@@ -333,6 +498,7 @@
             e.preventDefault(); e.stopPropagation();
             jsActive = true; jsId = e.pointerId;
             joystickZone.setPointerCapture(e.pointerId);
+            sound.resume();
         });
 
         joystickZone.addEventListener('pointermove', e => {
@@ -368,10 +534,16 @@
             }
         }
 
-        let initialBeta = null, initialGamma = null;
+        let initialBeta = null;
+        let initialGamma = null;
+
         function handleOrientation(event) {
             if (event.beta === null || event.gamma === null) return;
-            if (initialBeta === null) { initialBeta = event.beta; initialGamma = event.gamma; return; }
+            if (initialBeta === null) {
+                initialBeta = event.beta;
+                initialGamma = event.gamma;
+                return;
+            }
             let deltaBeta = (event.beta - initialBeta) * gyroSensitivity;
             let deltaGamma = (event.gamma - initialGamma) * gyroSensitivity;
             deltaBeta = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, deltaBeta));
@@ -384,6 +556,7 @@
         document.addEventListener('pointerdown', e => {
             if (e.clientX > window.innerWidth * 0.35 && !viewActive) {
                 viewActive = true; viewId = e.pointerId; lvx = e.clientX; lvy = e.clientY;
+                sound.resume();
             }
         });
         document.addEventListener('pointermove', e => {
@@ -403,16 +576,18 @@
             }
         });
 
-        // 举镜按钮
+        // ===== 举镜按钮 =====
         const aimBtn = document.getElementById('aimBtn');
         aimBtn.addEventListener('pointerdown', e => {
             e.preventDefault(); 
+            sound.resume();
             state.isAiming = true;
             state.aimTransitionTime = 0;
-            state.targetScale = 0.03; state.targetX = -0.255; state.targetY = -0.205; state.targetZ = 0.60;
+            state.targetScale = 0.03; state.targetX = -0.2555; state.targetY = -0.2125; state.targetZ = 0.60;
             state.targetRotX = 0.01; state.targetRotY = -3.14; state.targetRotZ = 0.01;
             state.fireCooldown = 0;
         });
+        
         aimBtn.addEventListener('pointerup', e => {
             e.preventDefault(); 
             state.isAiming = false;
@@ -424,6 +599,7 @@
         // 跳跃/滑铲
         document.getElementById('jumpBtn').addEventListener('pointerdown', e => {
             e.preventDefault(); e.stopPropagation();
+            sound.resume();
             if (state.isSliding) {
                 state.isSliding = false; state.isSlideJumping = true;
                 state.slideJumpTime = 0; state.slideJumpStartY = camera.position.y;
@@ -437,6 +613,7 @@
 
         document.getElementById('slideBtn').addEventListener('pointerdown', e => {
             e.preventDefault(); e.stopPropagation();
+            sound.resume();
             if (!state.isGrounded || state.isSliding || state.slideCooldown > 0 || state.isSlideJumping) return;
             state.isSliding = true; state.slideDistance = 0; state.slideCooldown = 0.3;
             state.targetTilt = 0.18; state.targetCamY = 0.35;
@@ -444,20 +621,25 @@
             fwd.y = 0; fwd.normalize();
             state.slideDirX = fwd.x; state.slideDirZ = fwd.z;
             state.currentSpeed = state.baseSpeed * 2.5; state.targetFOV = 110;
+            sound.playSlide();
+            state.slideSoundPlayed = true;
         });
 
-        // ===== 🟢 开火逻辑 =====
+        // ===== 开火逻辑 =====
         function performFire() {
             if (!state.isAiming || state.aimTransitionTime < state.aimDuration) return;
+
+            sound.playFire();
 
             const centerPos = new THREE.Vector3(0, -0.1, -0.5);
             centerPos.applyQuaternion(camera.quaternion);
             const muzzlePos = camera.position.clone().add(centerPos);
+            
             const forward = new THREE.Vector3(0, 0, -1);
             forward.applyQuaternion(camera.quaternion);
 
             createMuzzleFlash(muzzlePos, forward);
-            playFireSound();
+
             state.eulerX += 0.03;
 
             const centerX = window.innerWidth / 2;
@@ -484,7 +666,10 @@
                 normal.transformDirection(hitObj.matrixWorld);
 
                 createBulletTrail(muzzlePos, point);
-                if (hitObj === gridFloor) createBulletHit(point, normal);
+
+                if (hitObj === gridFloor) {
+                    createBulletHit(point, normal);
+                }
 
                 let parentGroup = null;
                 let obj = hitObj;
@@ -498,24 +683,40 @@
                 if (parentGroup && !parentGroup.userData.isDead) {
                     const part = hitObj.userData.bodyPart || 'torso';
                     let damage = 0;
-                    if (part === 'head') damage = 100;
-                    else if (part === 'torso') damage = 25;
-                    else damage = 15;
+                    let isHeadshot = false;
+                    if (part === 'head') {
+                        damage = 100;
+                        isHeadshot = true;
+                    } else if (part === 'torso') {
+                        damage = 25;
+                    } else {
+                        damage = 15;
+                    }
 
                     const data = parentGroup.userData;
                     data.hp = Math.max(0, data.hp - damage);
                     data.updateHP();
 
-                    playHitSound();
-                    showDamage(damage);
+                    const worldPos = new THREE.Vector3();
+                    parentGroup.getWorldPosition(worldPos);
+                    createDamageFloat(worldPos, damage, isHeadshot);
 
                     if (data.hp <= 0 && !data.isDead) {
                         data.isDead = true; data.deathTimer = 0;
-                        playKillSound();
-                        showKill();
                         const dir = Math.random() > 0.5 ? -1 : 1;
                         parentGroup.userData.ragdollDir = dir;
                         parentGroup.userData.ragdollTimer = 0;
+
+                        const now = performance.now() / 1000;
+                        if (now - lastKillTime <= STREAK_WINDOW && lastKillTime > 0) {
+                            killStreakCount++;
+                        } else {
+                            killStreakCount = 1;
+                        }
+                        lastKillTime = now;
+
+                        // 更新击杀图标（在弹药框上方）
+                        updateKillUI(isHeadshot, killStreakCount);
                     }
                 }
             } else {
@@ -526,19 +727,12 @@
             }
         }
 
-        // ==================== 🟢 模型加载器 ====================
+        // ===== 静态网站自动加载模型 =====
         const loader = new GLTFLoader();
         const loadingText = document.getElementById('loadingText');
 
-        // 二合一自动判断路径
-        let modelUrl = '';
-        if (window.location.protocol === 'file:') {
-            modelUrl = "file:///storage/emulated/0/Android/data/mark.via/cache/content/fps_smg9_animated.glb";
-        } else {
-            modelUrl = "./fps_smg9_animated.glb";
-        }
-
-        console.log('正在加载模型:', modelUrl);
+        // 同目录下找模型文件
+        const modelUrl = "./fps_smg9_animated.glb";
 
         loader.load(modelUrl, function (gltf) {
             while (handGroup.children.length > 0) handGroup.remove(handGroup.children[0]);
@@ -560,18 +754,15 @@
             
             loadingText.style.opacity = '0';
             setTimeout(() => loadingText.style.display = 'none', 500);
-            console.log('✅ 模型加载成功！');
         }, function (xhr) {
-            // 下载进度条
+            // 进度显示
             const percent = Math.round((xhr.loaded / xhr.total) * 100);
             loadingText.textContent = `⏳ 加载中 ${percent}%`;
         }, function (error) {
-            loadingText.textContent = '❌ 加载失败，请检查网络';
-            loadingText.style.color = '#ff5555';
+            loadingText.textContent = '❌ 加载失败，请检查同目录下是否有 fps_smg9_animated.glb';
             console.error('加载失败:', error);
         });
 
-        // ===== 游戏循环 =====
         const clock = new THREE.Clock();
 
         function update(dt) {
@@ -607,6 +798,17 @@
                 state.fireCooldown = 0;
             }
 
+            if (moving && state.isGrounded && !state.isSliding && !state.isSlideJumping) {
+                state.footstepTimer += dt;
+                if (state.footstepTimer >= state.footstepInterval) {
+                    state.footstepTimer = 0;
+                    sound.playFootstep();
+                }
+            } else {
+                state.footstepTimer = 0;
+            }
+
+            // 特效生命周期
             for (let i = bulletHoles.length - 1; i >= 0; i--) {
                 const h = bulletHoles[i];
                 h.userData.lifeTime -= dt;
@@ -618,10 +820,15 @@
             for (let i = muzzleFlashes.length - 1; i >= 0; i--) {
                 const f = muzzleFlashes[i];
                 f.userData.lifeTime -= dt;
-                f.children.forEach(sprite => { sprite.material.opacity -= dt * 5; });
+                f.children.forEach(sprite => {
+                    sprite.material.opacity -= dt * 5;
+                });
                 if (f.userData.lifeTime <= 0) {
                     scene.remove(f);
-                    f.children.forEach(sprite => { sprite.material.map.dispose(); sprite.material.dispose(); });
+                    f.children.forEach(sprite => {
+                        sprite.material.map.dispose();
+                        sprite.material.dispose();
+                    });
                     muzzleFlashes.splice(i, 1);
                 }
             }
@@ -635,6 +842,7 @@
                 }
             }
 
+            // 敌人逻辑
             enemies.forEach(enemy => {
                 const data = enemy.userData;
                 if (data.isDead) {
@@ -657,6 +865,7 @@
                 }
             });
 
+            // 跑酷物理
             if (state.isSlideJumping) {
                 state.slideJumpTime += dt;
                 const progress = state.slideJumpTime / state.slideJumpDuration;
