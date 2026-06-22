@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>第一人称射击</title>
+    <title>第一人称射击 - 静态网站版</title>
     <style>
-        /* 你的所有样式照旧，不动 */
         *{margin:0;padding:0;box-sizing:border-box;user-select:none;-webkit-tap-highlight-color:transparent}
         body{background:#000;width:100vw;height:100vh;height:100dvh;overflow:hidden;position:fixed;top:0;left:0;touch-action:none}
         canvas{display:block;position:fixed;top:0;left:0;z-index:1;touch-action:none}
@@ -54,15 +53,12 @@
     <button class="btn-aim" id="aimBtn">瞄准</button>
 
     <!-- ============================================================ -->
-    <!-- 改用 Script 标签加载 Three.js（绕过 SharedWorker 问题）       -->
+    <!-- 引入 Three.js (Script 标签方式)                               -->
     <!-- ============================================================ -->
     <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/loaders/RGBELoader.js"></script>
 
-    <!-- ============================================================ -->
-    <!-- 所有业务代码（用普通 script，不用 type="module"）            -->
-    <!-- ============================================================ -->
     <script>
         // ============================================================
         // 音效系统
@@ -203,7 +199,7 @@
         const progressFill = document.getElementById('progressFill');
 
         // ============================================================
-        // Three.js 场景（注意：不用 import，直接用 THREE.xxx）
+        // Three.js 场景
         // ============================================================
         const scene = new THREE.Scene();
         scene.background = new THREE.Color('#12121f');
@@ -224,14 +220,14 @@
         renderer.outputColorSpace = THREE.SRGBColorSpace;
         document.body.appendChild(renderer.domElement);
 
-        // 环境
+        // 环境 (光源强度减半)
         const rgbeLoader = new THREE.RGBELoader();
         rgbeLoader.load('https://threejs.org/examples/textures/equirectangular/venice_sunset_1k.hdr', (texture) => {
             texture.mapping = THREE.EquirectangularReflectionMapping;
             scene.environment = texture;
         });
 
-        const sun = new THREE.DirectionalLight('#ffffff', 2.5);
+        const sun = new THREE.DirectionalLight('#ffffff', 1.25); // 从 2.5 减半到 1.25
         sun.position.set(5, 15, 8);
         sun.castShadow = true;
         sun.shadow.mapSize.width = 2048;
@@ -243,11 +239,11 @@
         sun.shadow.camera.top = d; sun.shadow.camera.bottom = -d;
         scene.add(sun);
 
-        const fillLight = new THREE.DirectionalLight('#88aacc', 0.6);
+        const fillLight = new THREE.DirectionalLight('#88aacc', 0.3); // 从 0.6 减半到 0.3
         fillLight.position.set(-5, 0, 10);
         scene.add(fillLight);
 
-        const ambient = new THREE.AmbientLight('#404060', 0.4);
+        const ambient = new THREE.AmbientLight('#404060', 0.2); // 从 0.4 减半到 0.2
         scene.add(ambient);
 
         // 地面
@@ -273,7 +269,9 @@
         scene.add(gridHelper);
 
         // ===== 敌人 =====
-        const enemyMat = new THREE.MeshStandardMaterial({ color: '#44aa88', roughness: 0.6 });
+        const textureLoader = new THREE.TextureLoader();
+        const headImageUrl = 'https://www.boximchat.com/file/box-im/image/20260618/2067551011278438400.jpg';
+
         const enemies = [];
         const raycaster = new THREE.Raycaster();
 
@@ -328,33 +326,48 @@
 
         function createEnemy(index) {
             const group = new THREE.Group();
-            const torso = new THREE.Mesh(new THREE.BoxGeometry(5, 7.5, 3.5), enemyMat);
+            
+            // 敌人身体（方块）
+            const bodyMat = new THREE.MeshStandardMaterial({ color: '#44aa88', roughness: 0.6 });
+            const torso = new THREE.Mesh(new THREE.BoxGeometry(5, 7.5, 3.5), bodyMat);
             torso.position.y = 3.75;
             torso.castShadow = true; torso.receiveShadow = true;
             group.add(torso);
 
-            const head = new THREE.Mesh(new THREE.SphereGeometry(1.5, 8, 8), new THREE.MeshStandardMaterial({ color: '#ffccaa', roughness: 0.3 }));
+            // 敌人头部：改为2D图片（Sprite）
+            const headTexture = textureLoader.load(headImageUrl);
+            const headMaterial = new THREE.SpriteMaterial({ 
+                map: headTexture,
+                transparent: false,
+                depthTest: true,
+                depthWrite: false
+            });
+            const head = new THREE.Sprite(headMaterial);
+            head.scale.set(3.5, 3.5, 1); // 控制大小
             head.position.y = 10.0;
-            head.castShadow = true; head.receiveShadow = true;
             head.userData.bodyPart = 'head';
             group.add(head);
 
-            const armL = new THREE.Mesh(new THREE.BoxGeometry(1.0, 6.0, 1.0), enemyMat);
+            // 手臂
+            const armMat = new THREE.MeshStandardMaterial({ color: '#44aa88', roughness: 0.6 });
+            const armL = new THREE.Mesh(new THREE.BoxGeometry(1.0, 6.0, 1.0), armMat);
             armL.position.set(-3.5, 3.75, 0);
             armL.castShadow = true; armL.receiveShadow = true;
             group.add(armL);
 
-            const armR = new THREE.Mesh(new THREE.BoxGeometry(1.0, 6.0, 1.0), enemyMat);
+            const armR = new THREE.Mesh(new THREE.BoxGeometry(1.0, 6.0, 1.0), armMat);
             armR.position.set(3.5, 3.75, 0);
             armR.castShadow = true; armR.receiveShadow = true;
             group.add(armR);
 
-            const legL = new THREE.Mesh(new THREE.BoxGeometry(1.5, 7.0, 1.5), enemyMat);
+            // 腿部
+            const legMat = new THREE.MeshStandardMaterial({ color: '#44aa88', roughness: 0.6 });
+            const legL = new THREE.Mesh(new THREE.BoxGeometry(1.5, 7.0, 1.5), legMat);
             legL.position.set(-1.5, -3.5, 0);
             legL.castShadow = true; legL.receiveShadow = true;
             group.add(legL);
 
-            const legR = new THREE.Mesh(new THREE.BoxGeometry(1.5, 7.0, 1.5), enemyMat);
+            const legR = new THREE.Mesh(new THREE.BoxGeometry(1.5, 7.0, 1.5), legMat);
             legR.position.set(1.5, -3.5, 0);
             legR.castShadow = true; legR.receiveShadow = true;
             group.add(legR);
@@ -370,6 +383,7 @@
             group.position.set(Math.cos(angle) * radius, -10.0 + 7.5, Math.sin(angle) * radius);
             group.rotation.y = Math.random() * Math.PI * 2;
 
+            // 血条
             const canvas = document.createElement('canvas');
             canvas.width = 256; canvas.height = 64;
             const ctx = canvas.getContext('2d');
@@ -742,14 +756,16 @@
         }
 
         // ============================================================
-        // 核心：带缓存的 GLB 加载器（jsDelivr CDN 加速）
+        // 核心：模型加载（使用 Supabase Storage 直链）
         // ============================================================
         const loader = new THREE.GLTFLoader();
-        const MODEL_URL = "https://cdn.jsdelivr.net/gh/DarkStar02GG/html@main/fps_smg9_animated.glb";
+        // ✅ 使用 Supabase Storage 直链（你已上传模型到 model1 存储桶）
+        const MODEL_URL = "https://xofpimhsyrslrusoaxro.supabase.co/storage/v1/object/public/model1/fps_smg9_animated.glb";
         const CACHE_NAME = 'fps_model_v2';
         const CACHE_KEY = 'fps_smg9_animated.glb';
 
         function onModelLoaded(gltf) {
+            // 清空 handGroup 原有内容
             while (handGroup.children.length > 0) {
                 const child = handGroup.children[0];
                 if (child.geometry) child.geometry.dispose();
@@ -805,6 +821,7 @@
             loadingText.textContent = `⏳ 下载中 ${Math.min(100, Math.round(percent))}%`;
         }
 
+        // 主加载函数：先查缓存，没有再下载
         async function loadModelWithCache() {
             try {
                 const cache = await caches.open(CACHE_NAME);
@@ -901,6 +918,7 @@
             }
         }
 
+        // ===== 启动加载 =====
         loadModelWithCache();
 
         // ===== 动画循环 =====
