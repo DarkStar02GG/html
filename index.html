@@ -37,7 +37,7 @@
     <div id="loadingText">⏳ 检查缓存...</div>
     <div id="progressBar"><div class="fill" id="progressFill"></div></div>
     <div class="divider"></div>
-    <div id="crosshair">+</div>
+    <div id="crosshair"></div>
     <div id="ammoHUD"><span>[9999999]</span></div>
     <div id="killIconWrapper">
         <span class="kill-icon" id="killIcon">K</span>
@@ -52,17 +52,17 @@
     <button class="btn-slide" id="slideBtn">滑</button>
     <button class="btn-aim" id="aimBtn">瞄准</button>
 
-    <!-- ============================================================ -->
-    <!-- 引入 Three.js (Script 标签方式)                               -->
-    <!-- ============================================================ -->
-    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/loaders/GLTFLoader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/loaders/RGBELoader.js"></script>
+    <script type="importmap">
+        { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
+    </script>
 
-    <script>
-        // ============================================================
-        // 音效系统
-        // ============================================================
+    <script type="module">
+
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+
+        // ==================== 音效系统 ====================
         class SoundFX {
             constructor() {
                 this.ctx = null;
@@ -189,18 +189,14 @@
 
         const sound = new SoundFX();
 
-        // ============================================================
-        // UI 元素
-        // ============================================================
+        // ==================== UI 元素 ====================
         const killIcon = document.getElementById('killIcon');
         const killStreak = document.getElementById('killStreak');
         const loadingText = document.getElementById('loadingText');
         const progressBar = document.getElementById('progressBar');
         const progressFill = document.getElementById('progressFill');
 
-        // ============================================================
-        // Three.js 场景
-        // ============================================================
+        // ==================== Three.js 场景 ====================
         const scene = new THREE.Scene();
         scene.background = new THREE.Color('#12121f');
         scene.fog = new THREE.Fog('#12121f', 8, 40);
@@ -220,14 +216,14 @@
         renderer.outputColorSpace = THREE.SRGBColorSpace;
         document.body.appendChild(renderer.domElement);
 
-        // 环境 (光源强度减半)
-        const rgbeLoader = new THREE.RGBELoader();
+        // 环境
+        const rgbeLoader = new RGBELoader();
         rgbeLoader.load('https://threejs.org/examples/textures/equirectangular/venice_sunset_1k.hdr', (texture) => {
             texture.mapping = THREE.EquirectangularReflectionMapping;
             scene.environment = texture;
         });
 
-        const sun = new THREE.DirectionalLight('#ffffff', 1.25); // 从 2.5 减半到 1.25
+        const sun = new THREE.DirectionalLight('#ffffff', 2.5);
         sun.position.set(5, 15, 8);
         sun.castShadow = true;
         sun.shadow.mapSize.width = 2048;
@@ -239,11 +235,11 @@
         sun.shadow.camera.top = d; sun.shadow.camera.bottom = -d;
         scene.add(sun);
 
-        const fillLight = new THREE.DirectionalLight('#88aacc', 0.3); // 从 0.6 减半到 0.3
+        const fillLight = new THREE.DirectionalLight('#88aacc', 0.6);
         fillLight.position.set(-5, 0, 10);
         scene.add(fillLight);
 
-        const ambient = new THREE.AmbientLight('#404060', 0.2); // 从 0.4 减半到 0.2
+        const ambient = new THREE.AmbientLight('#404060', 0.2);
         scene.add(ambient);
 
         // 地面
@@ -269,9 +265,7 @@
         scene.add(gridHelper);
 
         // ===== 敌人 =====
-        const textureLoader = new THREE.TextureLoader();
-        const headImageUrl = 'https://www.boximchat.com/file/box-im/image/20260618/2067551011278438400.jpg';
-
+        const enemyMat = new THREE.MeshStandardMaterial({ color: '#44aa88', roughness: 0.6 });
         const enemies = [];
         const raycaster = new THREE.Raycaster();
 
@@ -326,48 +320,33 @@
 
         function createEnemy(index) {
             const group = new THREE.Group();
-            
-            // 敌人身体（方块）
-            const bodyMat = new THREE.MeshStandardMaterial({ color: '#44aa88', roughness: 0.6 });
-            const torso = new THREE.Mesh(new THREE.BoxGeometry(5, 7.5, 3.5), bodyMat);
+            const torso = new THREE.Mesh(new THREE.BoxGeometry(5, 7.5, 3.5), enemyMat);
             torso.position.y = 3.75;
             torso.castShadow = true; torso.receiveShadow = true;
             group.add(torso);
 
-            // 敌人头部：改为2D图片（Sprite）
-            const headTexture = textureLoader.load(headImageUrl);
-            const headMaterial = new THREE.SpriteMaterial({ 
-                map: headTexture,
-                transparent: false,
-                depthTest: true,
-                depthWrite: false
-            });
-            const head = new THREE.Sprite(headMaterial);
-            head.scale.set(3.5, 3.5, 1); // 控制大小
+            const head = new THREE.Mesh(new THREE.SphereGeometry(1.5, 8, 8), new THREE.MeshStandardMaterial({ color: '#ffccaa', roughness: 0.3 }));
             head.position.y = 10.0;
+            head.castShadow = true; head.receiveShadow = true;
             head.userData.bodyPart = 'head';
             group.add(head);
 
-            // 手臂
-            const armMat = new THREE.MeshStandardMaterial({ color: '#44aa88', roughness: 0.6 });
-            const armL = new THREE.Mesh(new THREE.BoxGeometry(1.0, 6.0, 1.0), armMat);
+            const armL = new THREE.Mesh(new THREE.BoxGeometry(1.0, 6.0, 1.0), enemyMat);
             armL.position.set(-3.5, 3.75, 0);
             armL.castShadow = true; armL.receiveShadow = true;
             group.add(armL);
 
-            const armR = new THREE.Mesh(new THREE.BoxGeometry(1.0, 6.0, 1.0), armMat);
+            const armR = new THREE.Mesh(new THREE.BoxGeometry(1.0, 6.0, 1.0), enemyMat);
             armR.position.set(3.5, 3.75, 0);
             armR.castShadow = true; armR.receiveShadow = true;
             group.add(armR);
 
-            // 腿部
-            const legMat = new THREE.MeshStandardMaterial({ color: '#44aa88', roughness: 0.6 });
-            const legL = new THREE.Mesh(new THREE.BoxGeometry(1.5, 7.0, 1.5), legMat);
+            const legL = new THREE.Mesh(new THREE.BoxGeometry(1.5, 7.0, 1.5), enemyMat);
             legL.position.set(-1.5, -3.5, 0);
             legL.castShadow = true; legL.receiveShadow = true;
             group.add(legL);
 
-            const legR = new THREE.Mesh(new THREE.BoxGeometry(1.5, 7.0, 1.5), legMat);
+            const legR = new THREE.Mesh(new THREE.BoxGeometry(1.5, 7.0, 1.5), enemyMat);
             legR.position.set(1.5, -3.5, 0);
             legR.castShadow = true; legR.receiveShadow = true;
             group.add(legR);
@@ -383,7 +362,6 @@
             group.position.set(Math.cos(angle) * radius, -10.0 + 7.5, Math.sin(angle) * radius);
             group.rotation.y = Math.random() * Math.PI * 2;
 
-            // 血条
             const canvas = document.createElement('canvas');
             canvas.width = 256; canvas.height = 64;
             const ctx = canvas.getContext('2d');
@@ -495,7 +473,7 @@
         const state = {
             moveX: 0, moveZ: 0, baseSpeed: 15, currentSpeed: 15, baseSpeedAim: 7.5,
             eulerX: 0, eulerY: 0, jumpVel: 0, isGrounded: true,
-            isSliding: false, slideDistance: 0, slideMaxDistance: 20,
+            isSliding: false, slideDistance: 0, slideMaxDistance: 35,
             slideCooldown: 0, bobTimer: 0, slideDirX: 0, slideDirZ: 0,
             currentCamY: 1.6, targetCamY: 1.6, currentTilt: 0, targetTilt: 0,
             currentFOV: 75, targetFOV: 75,
@@ -756,14 +734,15 @@
         }
 
         // ============================================================
-        // 核心：模型加载（使用 Supabase Storage 直链）
+        // ===== 核心：带缓存的 GLB 加载器（jsDelivr CDN 加速） =====
         // ============================================================
-        const loader = new THREE.GLTFLoader();
-        // ✅ 使用 Supabase Storage 直链（你已上传模型到 model1 存储桶）
-        const MODEL_URL = "https://xofpimhsyrslrusoaxro.supabase.co/storage/v1/object/public/model1/fps_smg9_animated.glb";
+        const loader = new GLTFLoader();
+        // ✅ 使用 jsDelivr CDN 加速（仓库已公开）
+const MODEL_URL = "https://xofpimhsyrslrusoaxro.supabase.co/storage/v1/object/public/model1/fps_smg9_animated.glb";
         const CACHE_NAME = 'fps_model_v2';
         const CACHE_KEY = 'fps_smg9_animated.glb';
 
+        // 模型加载完成后挂载到场景
         function onModelLoaded(gltf) {
             // 清空 handGroup 原有内容
             while (handGroup.children.length > 0) {
@@ -815,6 +794,7 @@
             }, 500);
         }
 
+        // 显示进度
         function updateProgress(percent) {
             progressBar.style.display = 'block';
             progressFill.style.width = Math.min(100, percent) + '%';
@@ -824,10 +804,14 @@
         // 主加载函数：先查缓存，没有再下载
         async function loadModelWithCache() {
             try {
+                // 1. 尝试打开缓存
                 const cache = await caches.open(CACHE_NAME);
+                
+                // 2. 检查缓存中是否有模型
                 const cachedResponse = await cache.match(CACHE_KEY);
                 
                 if (cachedResponse) {
+                    // ✅ 有缓存 → 直接加载（秒开）
                     loadingText.textContent = '📦 从缓存加载...';
                     const arrayBuffer = await cachedResponse.arrayBuffer();
                     const blob = new Blob([arrayBuffer], { type: 'model/gltf-binary' });
@@ -840,15 +824,18 @@
                         loadingText.textContent = '❌ 缓存损坏，重新下载...';
                         console.error('缓存加载失败:', err);
                         cache.delete(CACHE_KEY);
+                        // 递归调用重新下载
                         downloadAndCache();
                     });
                     return;
                 }
 
+                // ❌ 无缓存 → 下载
                 await downloadAndCache();
 
             } catch (error) {
                 console.error('缓存操作失败:', error);
+                // 降级：直接下载（不缓存）
                 loadingText.textContent = '⚠️ 缓存不可用，直接下载...';
                 progressBar.style.display = 'block';
                 loader.load(MODEL_URL, function(gltf) {
@@ -863,6 +850,7 @@
             }
         }
 
+        // 下载并存入缓存
         async function downloadAndCache() {
             try {
                 loadingText.textContent = '⏳ 连接服务器...';
@@ -892,15 +880,18 @@
                     }
                 }
 
+                // 合并数据
                 const arrayBuffer = await new Blob(chunks).arrayBuffer();
                 loadingText.textContent = '💾 保存到缓存...';
 
+                // 存入缓存
                 const cache = await caches.open(CACHE_NAME);
                 const cachedResponse = new Response(arrayBuffer, {
                     headers: { 'Content-Type': 'model/gltf-binary' }
                 });
                 await cache.put(CACHE_KEY, cachedResponse.clone());
 
+                // 加载到场景
                 const blob = new Blob([arrayBuffer], { type: 'model/gltf-binary' });
                 const url = URL.createObjectURL(blob);
                 loader.load(url, function(gltf) {
@@ -967,6 +958,7 @@
                 state.footstepTimer = 0;
             }
 
+            // 特效生命周期
             for (let i = bulletHoles.length - 1; i >= 0; i--) {
                 const h = bulletHoles[i];
                 h.userData.lifeTime -= dt;
@@ -1000,6 +992,7 @@
                 }
             }
 
+            // 敌人逻辑
             enemies.forEach(enemy => {
                 const data = enemy.userData;
                 if (data.isDead) {
@@ -1022,6 +1015,7 @@
                 }
             });
 
+            // 跑酷物理
             if (state.isSlideJumping) {
                 state.slideJumpTime += dt;
                 const progress = state.slideJumpTime / state.slideJumpDuration;
