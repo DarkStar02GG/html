@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>第一人称射击 - 静态网站版</title>
+    <title>第一人称射击 - 大叉痕 + 连杀</title>
     <style>
         *{margin:0;padding:0;box-sizing:border-box;user-select:none;-webkit-tap-highlight-color:transparent}
         body{background:#000;width:100vw;height:100vh;height:100dvh;overflow:hidden;position:fixed;top:0;left:0;touch-action:none}
@@ -14,34 +14,85 @@
         .joystick-thumb{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:45px;height:45px;border-radius:50%;background:rgba(255,255,255,0.25);border:2px solid rgba(255,255,255,0.45)}
         .btn-jump{position:fixed;bottom:100px;right:30px;width:70px;height:70px;border-radius:50%;background:rgba(255,200,50,0.2);border:2px solid rgba(255,200,50,0.45);color:#ffc832;font-size:14px;font-weight:bold;display:flex;align-items:center;justify-content:center;z-index:10;touch-action:none}
         .btn-jump:active{background:rgba(255,200,50,0.5)}
-        .btn-slide{position:fixed;bottom:30px;right:30px;width:70px;height:70px;border-radius:50%;background:rgba(100,200,255,0.2);border:2px solid rgba(100,200,255,0.45);color:#88ccff;font-size:14px;font-weight:bold;display:flex;align-items:center;justify-content:center;z-index:10;touch-action:none}
+        .btn-slide-wrap{position:fixed;bottom:30px;right:30px;display:flex;gap:10px;z-index:10;touch-action:none}
+        .btn-reload{width:70px;height:70px;border-radius:50%;background:rgba(255,200,100,0.2);border:2px solid rgba(255,200,100,0.45);color:#ffcc44;font-size:12px;font-weight:bold;display:flex;align-items:center;justify-content:center;touch-action:none;flex-direction:column;line-height:1.2;cursor:pointer}
+        .btn-reload:active{background:rgba(255,200,100,0.5)}
+        .btn-reload .sub{font-size:8px;opacity:0.7}
+        .btn-slide{width:70px;height:70px;border-radius:50%;background:rgba(100,200,255,0.2);border:2px solid rgba(100,200,255,0.45);color:#88ccff;font-size:14px;font-weight:bold;display:flex;align-items:center;justify-content:center;touch-action:none;cursor:pointer}
         .btn-slide:active{background:rgba(100,200,255,0.5)}
         .btn-aim{position:fixed;bottom:175px;right:30px;width:70px;height:70px;border-radius:50%;background:rgba(255,50,50,0.2);border:2px solid rgba(255,50,50,0.45);color:#ff5555;font-size:12px;font-weight:bold;display:flex;align-items:center;justify-content:center;z-index:10;touch-action:none}
         .btn-aim:active{background:rgba(255,50,50,0.5)}
-        #crosshair { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 25; pointer-events: none; color: rgba(255, 255, 255, 0.9); font-size: 30px; font-weight: 100; font-family: monospace; text-shadow: 0 0 5px rgba(0,0,0,0.8); }
-        #ammoHUD { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); z-index: 30; color: #fff; font-size: 22px; font-weight: bold; font-family: monospace; text-shadow: 0 0 10px rgba(0,0,0,0.8); pointer-events: none; background: rgba(0,0,0,0.5); padding: 5px 25px; border-radius: 25px; border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; gap: 12px; }
-        #killIconWrapper { position: fixed; bottom: 82px; left: 50%; transform: translateX(-50%); z-index: 31; pointer-events: none; display: flex; align-items: center; justify-content: center; gap: 6px; background: rgba(0,0,0,0.25); padding: 2px 10px; border-radius: 10px; backdrop-filter: blur(2px); border: 1px solid rgba(255,255,255,0.06); min-height: 20px; min-width: 30px; }
-        #killIconWrapper .kill-icon { font-size: 13px; color: #ffdd44; text-shadow: 0 0 8px rgba(255,200,0,0.3); display: none; line-height: 1; font-weight: bold; }
+        .btn-aim.disabled { opacity: 0.3; pointer-events: none; }
+        #ammoHUD { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); z-index: 30; color: #fff; font-size: 20px; font-weight: bold; font-family: monospace; text-shadow: 0 0 10px rgba(0,0,0,0.8); pointer-events: none; background: rgba(0,0,0,0.5); padding: 5px 25px; border-radius: 25px; border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; gap: 12px; }
+        #ammoHUD .ammo-current { color: #ffcc44; }
+        #ammoHUD .ammo-sep { color: #666; }
+        #ammoHUD .ammo-reserve { color: #88ccff; }
+        
+        /* ===== 连杀显示（原版样式） ===== */
+        #killIconWrapper { 
+            position: fixed; bottom: 82px; left: 50%; transform: translateX(-50%); 
+            z-index: 31; pointer-events: none; display: flex; align-items: center; 
+            justify-content: center; gap: 6px; background: rgba(0,0,0,0.25); 
+            padding: 2px 10px; border-radius: 10px; backdrop-filter: blur(2px); 
+            border: 1px solid rgba(255,255,255,0.06); min-height: 20px; min-width: 30px; 
+        }
+        #killIconWrapper .kill-icon { 
+            font-size: 13px; color: #ffdd44; text-shadow: 0 0 8px rgba(255,200,0,0.3); 
+            display: none; line-height: 1; font-weight: bold; 
+        }
         #killIconWrapper .kill-icon.show { display: inline; }
-        #killIconWrapper .kill-icon.headshot { color: #ff3333; text-shadow: 0 0 12px rgba(255,0,0,0.5); }
-        #killIconWrapper .kill-streak { font-size: 11px; color: #ffaa00; text-shadow: 0 0 10px rgba(255,170,0,0.4); display: none; font-weight: bold; line-height: 1; }
+        #killIconWrapper .kill-icon.headshot { 
+            color: #ff3333; text-shadow: 0 0 12px rgba(255,0,0,0.5); 
+        }
+        #killIconWrapper .kill-streak { 
+            font-size: 11px; color: #ffaa00; text-shadow: 0 0 10px rgba(255,170,0,0.4); 
+            display: none; font-weight: bold; line-height: 1; 
+        }
         #killIconWrapper .kill-streak.show { display: inline; }
-        .damage-float { position: fixed; pointer-events: none; font-weight: bold; font-family: 'Arial', sans-serif; text-shadow: 0 0 10px rgba(0,0,0,0.9), 0 0 4px rgba(0,0,0,0.8); z-index: 40; transition: all 1.2s ease-out; opacity: 1; transform: translateY(0) scale(1); }
-        .damage-float.fade { opacity: 0; transform: translateY(-80px) scale(1.3); }
+
         #loadingText { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 999; color: #fff; font-size: 18px; font-family: sans-serif; background: rgba(0,0,0,0.8); padding: 15px 30px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.2); pointer-events: none; transition: opacity 0.5s; }
         #progressBar { position: fixed; top: 58%; left: 50%; transform: translate(-50%, 0); width: 60%; max-width: 300px; height: 6px; background: rgba(255,255,255,0.15); border-radius: 3px; z-index: 999; overflow: hidden; display: none; }
         #progressBar .fill { height: 100%; width: 0%; background: linear-gradient(90deg, #44ff88, #44aaff); border-radius: 3px; transition: width 0.3s; }
+        @keyframes shimmer { 0% { background-position: 0% 0%; } 100% { background-position: 200% 0%; } }
+        #reloadBar { position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%); width: 150px; height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px; z-index: 35; overflow: hidden; display: none; }
+        #reloadBar .fill { height: 100%; width: 0%; background: #ffcc44; border-radius: 2px; transition: width 0.05s; }
+        
+        #xyzDisplay {
+            position: fixed; top: 20px; right: 20px; z-index: 50;
+            color: #00ff88; font-family: 'Courier New', monospace; font-size: 16px;
+            background: rgba(0,0,0,0.7); padding: 10px 18px; border-radius: 8px;
+            border: 1px solid rgba(0,255,136,0.3); text-shadow: 0 0 10px rgba(0,255,136,0.2);
+            pointer-events: none; backdrop-filter: blur(4px); display: flex; gap: 16px; align-items: center;
+        }
+        #xyzDisplay .label { color: #88ccff; }
+        #xyzDisplay .value { color: #00ff88; font-weight: bold; }
+        #xyzDisplay .sep { color: #666; }
     </style>
 </head>
 <body>
-    <div id="loadingText">⏳ 检查缓存...</div>
+    <div id="loadingText">⏳ 正在加载模型...</div>
     <div id="progressBar"><div class="fill" id="progressFill"></div></div>
     <div class="divider"></div>
-    <div id="crosshair"></div>
-    <div id="ammoHUD"><span>[9999999]</span></div>
+    <div id="ammoHUD">
+        <span class="ammo-current" id="ammoCurrent">30</span>
+        <span class="ammo-sep">/</span>
+        <span class="ammo-reserve" id="ammoReserve">900</span>
+    </div>
+    
+    <!-- ===== 连杀显示 ===== -->
     <div id="killIconWrapper">
         <span class="kill-icon" id="killIcon">K</span>
         <span class="kill-streak" id="killStreak">x2</span>
+    </div>
+    
+    <div id="reloadBar"><div class="fill" id="reloadFill"></div></div>
+
+    <div id="xyzDisplay">
+        <span><span class="label">X</span> <span class="value" id="xVal">0.00</span></span>
+        <span class="sep">|</span>
+        <span><span class="label">Y</span> <span class="value" id="yVal">0.00</span></span>
+        <span class="sep">|</span>
+        <span><span class="label">Z</span> <span class="value" id="zVal">0.00</span></span>
     </div>
 
     <div class="joystick-zone" id="joystickZone">
@@ -49,7 +100,11 @@
         <div class="joystick-thumb" id="joystickThumb"></div>
     </div>
     <button class="btn-jump" id="jumpBtn">跳</button>
-    <button class="btn-slide" id="slideBtn">滑</button>
+    
+    <div class="btn-slide-wrap">
+        <button class="btn-reload" id="reloadBtn">🔄<span class="sub">换弹</span></button>
+        <button class="btn-slide" id="slideBtn">滑铲</button>
+    </div>
     <button class="btn-aim" id="aimBtn">瞄准</button>
 
     <script type="importmap">
@@ -57,7 +112,6 @@
     </script>
 
     <script type="module">
-
         import * as THREE from 'three';
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
         import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
@@ -67,17 +121,9 @@
             constructor() {
                 this.ctx = null;
                 this.enabled = true;
-                try {
-                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-                } catch (e) {
-                    this.enabled = false;
-                }
+                try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) { this.enabled = false; }
             }
-            resume() {
-                if (this.ctx && this.ctx.state === 'suspended') {
-                    this.ctx.resume();
-                }
-            }
+            resume() { if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume(); }
             playFire() {
                 if (!this.enabled || !this.ctx) return;
                 this.resume();
@@ -97,28 +143,11 @@
                 const filter = this.ctx.createBiquadFilter();
                 filter.type = 'highpass';
                 filter.frequency.value = 800;
-                filter.Q.value = 0.5;
                 noise.connect(filter);
                 filter.connect(gain);
                 gain.connect(this.ctx.destination);
                 noise.start(now);
                 noise.stop(now + 0.06);
-                const osc = this.ctx.createOscillator();
-                osc.type = 'square';
-                osc.frequency.setValueAtTime(1200, now);
-                osc.frequency.exponentialRampToValueAtTime(400, now + 0.04);
-                const g2 = this.ctx.createGain();
-                g2.gain.setValueAtTime(0.2, now);
-                g2.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
-                const filter2 = this.ctx.createBiquadFilter();
-                filter2.type = 'bandpass';
-                filter2.frequency.value = 2000;
-                filter2.Q.value = 1;
-                osc.connect(filter2);
-                filter2.connect(g2);
-                g2.connect(this.ctx.destination);
-                osc.start(now);
-                osc.stop(now + 0.04);
             }
             playFootstep() {
                 if (!this.enabled || !this.ctx) return;
@@ -140,7 +169,6 @@
                 const filter = this.ctx.createBiquadFilter();
                 filter.type = 'lowpass';
                 filter.frequency.value = 400;
-                filter.Q.value = 1.2;
                 source.connect(filter);
                 filter.connect(gain);
                 gain.connect(this.ctx.destination);
@@ -167,42 +195,124 @@
                 const filter = this.ctx.createBiquadFilter();
                 filter.type = 'bandpass';
                 filter.frequency.value = 600;
-                filter.Q.value = 0.8;
                 noiseSrc.connect(filter);
                 filter.connect(gain);
                 gain.connect(this.ctx.destination);
                 noiseSrc.start(now);
                 noiseSrc.stop(now + 0.25);
-                const osc = this.ctx.createOscillator();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(150, now);
-                osc.frequency.exponentialRampToValueAtTime(80, now + 0.15);
-                const g2 = this.ctx.createGain();
-                g2.gain.setValueAtTime(0.3, now);
-                g2.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-                osc.connect(g2);
-                g2.connect(this.ctx.destination);
-                osc.start(now);
-                osc.stop(now + 0.15);
+            }
+            playReload() {
+                if (!this.enabled || !this.ctx) return;
+                this.resume();
+                const now = this.ctx.currentTime;
+                for (let i = 0; i < 3; i++) {
+                    setTimeout(() => {
+                        const osc = this.ctx.createOscillator();
+                        const g = this.ctx.createGain();
+                        osc.type = 'square';
+                        osc.frequency.setValueAtTime(800 + i * 300, now);
+                        osc.frequency.exponentialRampToValueAtTime(400 + i * 200, now + 0.08);
+                        g.gain.setValueAtTime(0.08, now);
+                        g.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+                        osc.connect(g);
+                        g.connect(this.ctx.destination);
+                        osc.start(now);
+                        osc.stop(now + 0.08);
+                    }, i * 150);
+                }
             }
         }
 
         const sound = new SoundFX();
 
-        // ==================== UI 元素 ====================
+        // ==================== UI ====================
         const killIcon = document.getElementById('killIcon');
         const killStreak = document.getElementById('killStreak');
         const loadingText = document.getElementById('loadingText');
         const progressBar = document.getElementById('progressBar');
         const progressFill = document.getElementById('progressFill');
+        const reloadFill = document.getElementById('reloadFill');
+        const reloadBar = document.getElementById('reloadBar');
+        const reloadBtn = document.getElementById('reloadBtn');
+        const slideBtn = document.getElementById('slideBtn');
+        const aimBtn = document.getElementById('aimBtn');
+        const ammoCurrent = document.getElementById('ammoCurrent');
+        const ammoReserve = document.getElementById('ammoReserve');
+        const xVal = document.getElementById('xVal');
+        const yVal = document.getElementById('yVal');
+        const zVal = document.getElementById('zVal');
 
-        // ==================== Three.js 场景 ====================
+        // ==================== 弹药 ====================
+        const MAG_SIZE = 30;
+        let currentAmmo = 30;
+        let reserveAmmo = 900;
+        let isReloading = false;
+        let reloadTimer = 0;
+        const RELOAD_DURATION = 2.62;
+
+        function updateAmmoHUD() {
+            ammoCurrent.textContent = currentAmmo;
+            ammoReserve.textContent = reserveAmmo;
+        }
+        function consumeAmmo() {
+            if (isReloading) return false;
+            if (currentAmmo > 0) {
+                currentAmmo--;
+                updateAmmoHUD();
+                return true;
+            } else {
+                if (reserveAmmo > 0 && !isReloading) {
+                    if (state.isAiming) {
+                        state.isAiming = false;
+                        state.aimTransitionTime = 0;
+                        state.targetScale = 0.03; state.targetX = 0.00; state.targetY = -0.35; state.targetZ = 0.20;
+                        state.targetRotX = 0.01; state.targetRotY = -3.14; state.targetRotZ = 0.01;
+                    }
+                    startReload();
+                }
+                return false;
+            }
+        }
+        function startReload() {
+            if (isReloading || reserveAmmo <= 0 || currentAmmo === MAG_SIZE) return;
+            if (state.isAiming) {
+                state.isAiming = false;
+                state.aimTransitionTime = 0;
+                state.targetScale = 0.03; state.targetX = 0.00; state.targetY = -0.35; state.targetZ = 0.20;
+                state.targetRotX = 0.01; state.targetRotY = -3.14; state.targetRotZ = 0.01;
+            }
+            isReloading = true;
+            reloadTimer = 0;
+            reloadBar.style.display = 'block';
+            reloadFill.style.width = '0%';
+            reloadBtn.textContent = '⏳';
+            reloadBtn.style.borderColor = '#ffcc44';
+            aimBtn.classList.add('disabled');
+            sound.playReload();
+            playReloadAnimation();
+        }
+        function finishReload() {
+            if (!isReloading) return;
+            const need = MAG_SIZE - currentAmmo;
+            const give = Math.min(need, reserveAmmo);
+            currentAmmo += give;
+            reserveAmmo -= give;
+            isReloading = false;
+            reloadBar.style.display = 'none';
+            reloadFill.style.width = '0%';
+            reloadBtn.textContent = '🔄';
+            reloadBtn.style.borderColor = 'rgba(255,200,100,0.45)';
+            aimBtn.classList.remove('disabled');
+            updateAmmoHUD();
+            if (currentAction) { currentAction.stop(); currentAction = null; }
+        }
+
+        // ==================== Three.js ====================
         const scene = new THREE.Scene();
         scene.background = new THREE.Color('#12121f');
         scene.fog = new THREE.Fog('#12121f', 8, 40);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.05, 100);
-        camera.position.set(0, 1.6, 0);
         camera.rotation.order = 'YXZ';
         scene.add(camera);
 
@@ -239,7 +349,7 @@
         fillLight.position.set(-5, 0, 10);
         scene.add(fillLight);
 
-        const ambient = new THREE.AmbientLight('#404060', 0.2);
+        const ambient = new THREE.AmbientLight('#404060', 0.4);
         scene.add(ambient);
 
         // 地面
@@ -248,7 +358,7 @@
             new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 })
         );
         invisibleFloor.rotation.x = -Math.PI / 2;
-        invisibleFloor.position.y = 0;
+        invisibleFloor.position.y = GROUND_Y;
         scene.add(invisibleFloor);
 
         const gridFloor = new THREE.Mesh(
@@ -264,139 +374,396 @@
         gridHelper.position.y = -10.0;
         scene.add(gridHelper);
 
-        // ===== 敌人 =====
-        const enemyMat = new THREE.MeshStandardMaterial({ color: '#44aa88', roughness: 0.6 });
-        const enemies = [];
-        const raycaster = new THREE.Raycaster();
+        // ===== 掩体障碍物 =====
+        const obstacleMat = new THREE.MeshStandardMaterial({ color: '#3a3a4a', roughness: 0.7, metalness: 0.1 });
+        const obstacles = [];
 
-        // 连杀系统
+        const obstacleData = [
+            { x: -4, z: -3, w: 2, h: 1, d: 1 },
+            { x: -4, z: 3, w: 2, h: 1, d: 1 },
+            { x: 0, z: 0, w: 3, h: 2, d: 1 },
+            { x: 4, z: -3, w: 2, h: 1, d: 1 },
+            { x: 4, z: 3, w: 2, h: 1, d: 1 },
+            { x: 0, z: -8, w: 5, h: 1.5, d: 0.5 },
+        ];
+        obstacleData.forEach(data => {
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(data.w, data.h, data.d), obstacleMat);
+            mesh.position.set(data.x, GROUND_Y + data.h / 2, data.z);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            mesh.userData.isObstacle = true;
+            scene.add(mesh);
+            obstacles.push(mesh);
+        });
+
+        // ===== 玩家血量 =====
+        let playerHP = 100;
+        const MAX_PLAYER_HP = 100;
+        let isPlayerDead = false;
+        let playerDeathTimer = 0;
+
+        // ===== 准确度系统 =====
+        let playerAccuracy = 0.60;
+        let accuracyRecoveryTimer = 0;
+        const ACC_MAX = 0.60;
+        const ACC_MIN = 0.35;
+        const ACC_SHOT_PENALTY = 0.02;
+        const ACC_RECOVERY_RATE = 0.05;
+        const ACC_RECOVERY_TIME = 1.5;
+        const ACC_RANGE_PENALTY_DIST = 15;
+        const ACC_RANGE_PENALTY = 0.10;
+        const ACC_MOVE_LAG = 0.15;
+        let aimLagX = 0, aimLagY = 0;
+
+        // ===== 敌人 AI 系统 =====
+        const AI_STATES = { IDLE: 'IDLE', ALERT: 'ALERT', COMBAT: 'COMBAT', RELOAD: 'RELOAD', HIT: 'HIT' };
+        const AI_CONFIG = {
+            VISUAL_RANGE: 25, VISUAL_ANGLE: 120 * Math.PI / 180,
+            HEAR_RANGE: 25, HEAR_DELAY: 0.3,
+            BACK_TURN_DELAY: 0.8,
+            COMBAT_FIRE_MIN: 0.6, COMBAT_FIRE_MAX: 0.8,
+            RETREAT_FIRE_MIN: 0.9, RETREAT_FIRE_MAX: 1.2,
+            RETREAT_THRESHOLD: 0.3, RETREAT_SPEED: 2,
+            RELOAD_DURATION_AI: 2.5, RELOAD_SHOT_COUNT: 15,
+        };
+        const enemyAIStates = new Map();
+        let lastGunshotPos = null;
+        let lastGunshotTime = -10;
+
+        function initAIState(enemy) {
+            const s = {
+                state: AI_STATES.IDLE, stateTimer: 0,
+                idleRotateTimer: 0, idleRotateTargetY: enemy.rotation.y,
+                shotsFired: 0, reloadTimer: 0,
+                hitTimer: 0, turnTimer: 0,
+                lastKnownPlayerPos: null, isPlayerVisible: false,
+                combatFireTimer: AI_CONFIG.COMBAT_FIRE_MIN + Math.random() * (AI_CONFIG.COMBAT_FIRE_MAX - AI_CONFIG.COMBAT_FIRE_MIN),
+                retreatDir: new THREE.Vector3(0, 0, 1),
+                strafeTimer: 0, strafeDir: 1,
+            };
+            enemyAIStates.set(enemy, s);
+            return s;
+        }
+
+        // ===== 敌人 =====
+        const enemies = [];
+        let enemyGroup = null;
+        let enemyMixer = null;
+        let enemyAction = null;
+        let gunModel = null;
+        let deathMark = null;
+        const raycaster = new THREE.Raycaster();
         let killStreakCount = 0;
         let lastKillTime = 0;
         const STREAK_WINDOW = 5.0;
 
-        function updateKillUI(isHeadshot, streak) {
-            if (isHeadshot) {
-                killIcon.textContent = 'H';
-                killIcon.className = 'kill-icon show headshot';
-            } else {
+        // ===== 连杀显示（原版样式） =====
+        function updateKillUI(streak) {
+            if (streak >= 2) {
                 killIcon.textContent = 'K';
                 killIcon.className = 'kill-icon show';
-            }
-            if (streak >= 2) {
                 killStreak.textContent = 'x' + streak;
                 killStreak.className = 'kill-streak show';
             } else {
+                killIcon.className = 'kill-icon';
                 killStreak.className = 'kill-streak';
             }
         }
 
-        // 伤害跳字
-        function createDamageFloat(worldPos, damage, isHeadshot) {
-            const vector = worldPos.clone().add(new THREE.Vector3(0, 2.0, 0));
-            vector.project(camera);
-            const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
-            const y = (-vector.y * 0.5 + 0.5) * window.innerHeight;
-            if (vector.z > 1 || x < 0 || x > window.innerWidth || y < 0 || y > window.innerHeight) return;
-            const el = document.createElement('div');
-            el.className = 'damage-float';
-            const color = isHeadshot ? '#ff3333' : '#ffdd44';
-            const size = isHeadshot ? '28px' : '22px';
-            el.style.color = color;
-            el.style.fontSize = size;
-            el.style.left = x + 'px';
-            el.style.top = y + 'px';
-            el.textContent = isHeadshot ? 'H ' + damage : '-' + damage;
-            if (isHeadshot) {
-                el.style.textShadow = '0 0 20px rgba(255,0,0,0.8), 0 0 40px rgba(255,0,0,0.4)';
+        // ===== 创建死亡叉痕（放大10倍，放在地面） =====
+        function createDeathMark(position) {
+            if (deathMark) {
+                scene.remove(deathMark);
+                deathMark = null;
             }
-            document.body.appendChild(el);
-            requestAnimationFrame(() => {
-                el.classList.add('fade');
-            });
-            setTimeout(() => {
-                if (el.parentNode) el.parentNode.removeChild(el);
-            }, 1200);
+            
+            const mat = new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0.9 });
+            const geo1 = new THREE.BoxGeometry(8, 0.05, 0.5);
+            const geo2 = new THREE.BoxGeometry(8, 0.05, 0.5);
+            
+            const line1 = new THREE.Mesh(geo1, mat);
+            const line2 = new THREE.Mesh(geo2, mat);
+            
+            line1.rotation.y = Math.PI / 4;
+            line2.rotation.y = -Math.PI / 4;
+            
+            deathMark = new THREE.Group();
+            deathMark.add(line1);
+            deathMark.add(line2);
+            deathMark.position.set(position.x, -10.0, position.z);
+            
+            scene.add(deathMark);
         }
 
-        function createEnemy(index) {
-            const group = new THREE.Group();
-            const torso = new THREE.Mesh(new THREE.BoxGeometry(5, 7.5, 3.5), enemyMat);
-            torso.position.y = 3.75;
-            torso.castShadow = true; torso.receiveShadow = true;
-            group.add(torso);
+        function removeDeathMark() {
+            if (deathMark) {
+                scene.remove(deathMark);
+                deathMark = null;
+            }
+        }
 
-            const head = new THREE.Mesh(new THREE.SphereGeometry(1.5, 8, 8), new THREE.MeshStandardMaterial({ color: '#ffccaa', roughness: 0.3 }));
-            head.position.y = 10.0;
-            head.castShadow = true; head.receiveShadow = true;
-            head.userData.bodyPart = 'head';
-            group.add(head);
+        // ===== 从 CDN 自动加载模型 =====
+        const loader = new GLTFLoader();
+        const ENEMY_SCALE = 5.0;
+        const footOffset = -10;
 
-            const armL = new THREE.Mesh(new THREE.BoxGeometry(1.0, 6.0, 1.0), enemyMat);
-            armL.position.set(-3.5, 3.75, 0);
-            armL.castShadow = true; armL.receiveShadow = true;
-            group.add(armL);
+        const GROUND_Y = -10;
+        const PLAYER_SPAWN = new THREE.Vector3(-6, GROUND_Y, 0);
+        const ENEMY_SPAWN = new THREE.Vector3(6, GROUND_Y, 0);
 
-            const armR = new THREE.Mesh(new THREE.BoxGeometry(1.0, 6.0, 1.0), enemyMat);
-            armR.position.set(3.5, 3.75, 0);
-            armR.castShadow = true; armR.receiveShadow = true;
-            group.add(armR);
+        const GUN_PARAMS = {
+            position: new THREE.Vector3(-0.240, 2.640, 0.650),
+            rotation: new THREE.Euler(-0.01, 1.60, 0.01),
+            scale: 0.11
+        };
 
-            const legL = new THREE.Mesh(new THREE.BoxGeometry(1.5, 7.0, 1.5), enemyMat);
-            legL.position.set(-1.5, -3.5, 0);
-            legL.castShadow = true; legL.receiveShadow = true;
-            group.add(legL);
+        function attachGunToEnemy() {
+            if (!enemyGroup || !gunModel) return;
+            const oldGun = enemyGroup.getObjectByName('gun');
+            if (oldGun) {
+                enemyGroup.remove(oldGun);
+            }
+            gunModel.name = 'gun';
+            enemyGroup.add(gunModel);
+        }
 
-            const legR = new THREE.Mesh(new THREE.BoxGeometry(1.5, 7.0, 1.5), enemyMat);
-            legR.position.set(1.5, -3.5, 0);
-            legR.castShadow = true; legR.receiveShadow = true;
-            group.add(legR);
+        function onHandModelLoaded(gltf) {
+            while (handGroup.children.length > 0) {
+                const child = handGroup.children[0];
+                if (child.geometry) child.geometry.dispose();
+                if (child.material) child.material.dispose();
+                handGroup.remove(child);
+            }
+            handMixer = new THREE.AnimationMixer(gltf.scene);
+            handAnimations = gltf.animations || [];
+            gltf.scene.traverse((child) => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
+            const initScale = 0.03;
+            gltf.scene.scale.setScalar(initScale);
+            gltf.scene.position.set(0.00, -0.35, 0.20);
+            gltf.scene.rotation.set(0.01, -3.14, 0.01);
+            handGroup.add(gltf.scene);
+        }
 
-            group.userData = {
-                isEnemy: true, hp: 100, maxHp: 100, index: index,
-                isDead: false, deathTimer: 0, resetTimer: 0,
-                torso: torso, head: head, legL: legL, legR: legR
+        function onModelLoaded(gltf) {
+            if (enemyGroup) {
+                scene.remove(enemyGroup);
+                enemies.length = 0;
+                enemyAIStates.clear();
+                enemyGroup = null;
+                enemyMixer = null;
+                enemyAction = null;
+                gunModel = null;
+            }
+            removeDeathMark();
+            enemyGroup = gltf.scene;
+            enemyGroup.position.set(ENEMY_SPAWN.x, footOffset, ENEMY_SPAWN.z);
+            enemyGroup.scale.setScalar(ENEMY_SCALE);
+            enemyGroup.traverse((child) => {
+                if (child.isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                    const name = child.name.toLowerCase();
+                    if (name.includes('head')) child.userData.bodyPart = 'head';
+                    else if (name.includes('leg') || name.includes('foot') || name.includes('脚') || name.includes('腿')) child.userData.bodyPart = 'leg';
+                    else child.userData.bodyPart = 'torso';
+                }
+            });
+            enemyGroup.userData = {
+                isEnemy: true, hp: 100, maxHp: 100, isDead: false,
+                deathTimer: 0, resetTimer: 0,
+                deathPosition: new THREE.Vector3(0, 0, -10)
             };
-
-            const angle = Math.random() * Math.PI * 2;
-            const radius = 5 + Math.random() * 10;
-            group.position.set(Math.cos(angle) * radius, -10.0 + 7.5, Math.sin(angle) * radius);
-            group.rotation.y = Math.random() * Math.PI * 2;
-
+            if (gltf.animations && gltf.animations.length > 0) {
+                enemyMixer = new THREE.AnimationMixer(enemyGroup);
+                const clip = gltf.animations[0];
+                enemyAction = enemyMixer.clipAction(clip);
+                enemyAction.play();
+                enemyAction.loop = THREE.LoopRepeat;
+                enemyAction.clampWhenFinished = false;
+            }
             const canvas = document.createElement('canvas');
             canvas.width = 256; canvas.height = 64;
             const ctx = canvas.getContext('2d');
             const hpSpriteMat = new THREE.CanvasTexture(canvas);
             const hpSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: hpSpriteMat, depthTest: false }));
-            hpSprite.scale.set(10, 2, 1);
-            hpSprite.position.y = 15.0; 
-            group.add(hpSprite);
-            
-            group.userData.hpCanvas = canvas; group.userData.hpCtx = ctx;
-            group.userData.hpSprite = hpSprite; group.userData.hpTexture = hpSpriteMat;
-
-            group.userData.updateHP = function() {
+            hpSprite.scale.set(1.0, 0.2, 1);
+            hpSprite.position.y = 1.5 * ENEMY_SCALE;
+            enemyGroup.add(hpSprite);
+            enemyGroup.userData.hpCanvas = canvas;
+            enemyGroup.userData.hpCtx = ctx;
+            enemyGroup.userData.hpSprite = hpSprite;
+            enemyGroup.userData.hpTexture = hpSpriteMat;
+            enemyGroup.userData.updateHP = function () {
                 const hp = this.hp / this.maxHp;
-                const ctx = this.hpCtx; const canvas = this.hpCanvas;
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.fillStyle = '#333'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+                const ctx = this.hpCtx;
+                const c = this.hpCanvas;
+                ctx.clearRect(0, 0, c.width, c.height);
+                ctx.fillStyle = '#333';
+                ctx.fillRect(0, 0, c.width, c.height);
                 ctx.fillStyle = hp > 0.5 ? '#44ff44' : (hp > 0.25 ? '#ffaa00' : '#ff3333');
-                ctx.fillRect(2, 2, (canvas.width - 4) * Math.max(0, hp), canvas.height - 4);
+                ctx.fillRect(2, 2, (c.width - 4) * Math.max(0, hp), c.height - 4);
                 this.hpTexture.needsUpdate = true;
             };
-            group.userData.updateHP();
-
-            scene.add(group);
-            enemies.push(group);
-            return group;
+            enemyGroup.userData.updateHP();
+            scene.add(enemyGroup);
+            enemies.push(enemyGroup);
+            const aiS = initAIState(enemyGroup);
+            aiS.retreatDir.set(0, 0, 1);
+            if (gunModel) attachGunToEnemy();
         }
-        for (let i = 0; i < 10; i++) createEnemy(i);
 
-        // ===== 特效系统 =====
+        function onGunLoaded(gltf) {
+            gunModel = gltf.scene;
+            gunModel.scale.setScalar(GUN_PARAMS.scale);
+            gunModel.position.copy(GUN_PARAMS.position);
+            gunModel.rotation.copy(GUN_PARAMS.rotation);
+            gunModel.traverse((child) => {
+                if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; }
+            });
+            if (enemyGroup) attachGunToEnemy();
+        }
+
+        // 从 Gitee CDN 加载三个模型
+        const MODEL_URLS = {
+            model: 'https://raw.giteeusercontent.com/darkstargg/html/raw/master/model.glb',
+            gun: 'https://raw.giteeusercontent.com/darkstargg/html/raw/master/gun.glb',
+            hand: 'https://raw.giteeusercontent.com/darkstargg/html/raw/master/hand.glb',
+        };
+        const modelCache = {};
+        const totalModels = 3;
+        let downloadProgress = 0;
+
+        function updateProgressBar() {
+            const pct = Math.min(downloadProgress * 100, 100);
+            progressFill.style.width = pct + '%';
+        }
+
+        function downloadWithProgress(name, url) {
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('GET', url, true);
+                xhr.responseType = 'arraybuffer';
+                const share = 1 / totalModels;
+                let finished = false;
+
+                const timer = setTimeout(() => {
+                    if (!finished) {
+                        xhr.abort();
+                        reject(new Error('下载超时'));
+                    }
+                }, 30000);
+
+                let lastPct = 0;
+                xhr.onprogress = (e) => {
+                    if (e.lengthComputable) {
+                        downloadProgress = (lastPct + (e.loaded / e.total) * share);
+                        updateProgressBar();
+                    } else {
+                        progressFill.style.background = 'linear-gradient(90deg, #44ff88, #44aaff) 0% 0% / 200% 100%';
+                        progressFill.style.animation = 'shimmer 1.5s infinite';
+                    }
+                };
+
+                xhr.onload = () => {
+                    if (finished) return;
+                    finished = true;
+                    clearTimeout(timer);
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        const buffer = xhr.response;
+                        modelCache[name] = buffer;
+                        lastPct += share;
+                        downloadProgress = lastPct;
+                        updateProgressBar();
+                        console.log(`📦 ${name} 已下载到缓存 (${(buffer.byteLength / 1024).toFixed(1)}KB)`);
+                        resolve(buffer);
+                    } else {
+                        reject(new Error(`HTTP ${xhr.status}`));
+                    }
+                };
+
+                xhr.onerror = () => {
+                    if (finished) return;
+                    finished = true;
+                    clearTimeout(timer);
+                    reject(new Error('网络错误'));
+                };
+
+                xhr.onabort = () => {
+                    if (finished) return;
+                    finished = true;
+                    clearTimeout(timer);
+                    reject(new Error('已取消'));
+                };
+
+                xhr.send();
+            });
+        }
+
+        function loadFromCache(name, callback) {
+            return new Promise((resolve) => {
+                const buffer = modelCache[name];
+                if (!buffer) {
+                    console.error(`❌ ${name} 缓存中不存在`);
+                    resolve(false);
+                    return;
+                }
+                loader.parse(buffer, '', (gltf) => {
+                    try {
+                        callback(gltf);
+                        console.log(`✅ ${name} 加载成功`);
+                        resolve(true);
+                    } catch (e) {
+                        console.error(`❌ ${name} 处理出错:`, e);
+                        resolve(false);
+                    }
+                }, (err) => {
+                    console.error(`❌ ${name} 解析失败:`, err);
+                    resolve(false);
+                });
+            });
+        }
+
+        async function startLoadingModels() {
+            loadingText.textContent = '⏳ 正在下载模型...';
+            progressBar.style.display = 'block';
+            downloadProgress = 0;
+            updateProgressBar();
+
+            try {
+                await Promise.all([
+                    downloadWithProgress('model', MODEL_URLS.model),
+                    downloadWithProgress('gun', MODEL_URLS.gun),
+                    downloadWithProgress('hand', MODEL_URLS.hand),
+                ]);
+            } catch (e) {
+                console.error('❌ 部分模型下载失败:', e);
+            }
+
+            downloadProgress = 1;
+            updateProgressBar();
+            progressFill.style.animation = 'none';
+            progressFill.style.background = 'linear-gradient(90deg, #44ff88, #44aaff)';
+
+            loadingText.textContent = '⏳ 正在加载模型到场景...';
+
+            await loadFromCache('model', onModelLoaded);
+            await loadFromCache('gun', onGunLoaded);
+            await loadFromCache('hand', onHandModelLoaded);
+
+            progressBar.style.display = 'none';
+            loadingText.textContent = '✅ 全部模型加载完成';
+            setTimeout(() => {
+                loadingText.style.opacity = '0';
+                setTimeout(() => { loadingText.style.display = 'none'; }, 500);
+            }, 1500);
+        }
+
+        // ===== 特效 =====
         const bulletHoles = []; const muzzleFlashes = []; const bulletTrails = [];
-        const holeMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9, metalness: 0.1 });
+        const holeMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9 });
 
         function createBulletHit(pos, normal) {
-            if (bulletHoles.length >= 20) {
+            if (bulletHoles.length >= 10) {
                 const old = bulletHoles.shift(); scene.remove(old);
                 old.geometry.dispose(); old.material.dispose();
             }
@@ -404,38 +771,21 @@
             hole.position.copy(pos).add(normal.clone().multiplyScalar(0.02));
             hole.lookAt(pos.clone().add(normal));
             scene.add(hole);
-            hole.userData.lifeTime = 5.0;
             bulletHoles.push(hole);
         }
 
         function createMuzzleFlash(pos, dir) {
-            const flashGroup = new THREE.Group();
             const coreMat = new THREE.SpriteMaterial({
                 map: new THREE.CanvasTexture(generateSparkTexture()),
                 transparent: true, opacity: 1, blending: THREE.AdditiveBlending
             });
             const core = new THREE.Sprite(coreMat);
             core.scale.set(0.4, 0.4, 1);
-            flashGroup.add(core);
-
-            for (let i = 0; i < 5; i++) {
-                const size = 0.15 + Math.random() * 0.2;
-                const mat = new THREE.SpriteMaterial({
-                    map: new THREE.CanvasTexture(generateSparkTexture()),
-                    transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending
-                });
-                const sprite = new THREE.Sprite(mat);
-                const angle = Math.random() * Math.PI * 2;
-                const radius = 0.15 + Math.random() * 0.1;
-                sprite.position.set(Math.cos(angle) * radius, Math.sin(angle) * radius, Math.random() * 0.1);
-                sprite.scale.set(size, size, 1);
-                flashGroup.add(sprite);
-            }
-            flashGroup.position.copy(pos);
-            flashGroup.lookAt(pos.clone().add(dir));
-            scene.add(flashGroup);
-            flashGroup.userData.lifeTime = 0.1;
-            muzzleFlashes.push(flashGroup);
+            core.position.copy(pos);
+            core.lookAt(pos.clone().add(dir));
+            scene.add(core);
+            core.userData.lifeTime = 0.06;
+            muzzleFlashes.push(core);
         }
 
         function generateSparkTexture() {
@@ -452,16 +802,15 @@
         }
 
         function createBulletTrail(start, end) {
-            const points = []; const steps = 20;
+            const points = []; const steps = 8;
             for (let i = 0; i <= steps; i++) {
-                const t = i / steps; const p = new THREE.Vector3().lerpVectors(start, end, t);
-                points.push(p);
+                const t = i / steps; points.push(new THREE.Vector3().lerpVectors(start, end, t));
             }
             const geo = new THREE.BufferGeometry().setFromPoints(points);
-            const mat = new THREE.LineBasicMaterial({ color: 0xffdd44, transparent: true, opacity: 0.9 });
+            const mat = new THREE.LineBasicMaterial({ color: 0xffdd44, transparent: true, opacity: 0.8 });
             const line = new THREE.Line(geo, mat);
             scene.add(line);
-            line.userData.lifeTime = 0.15;
+            line.userData.lifeTime = 0.08;
             bulletTrails.push(line);
         }
 
@@ -470,12 +819,22 @@
         camera.add(handGroup);
         handGroup.position.set(0.25, -0.35, -0.6);
 
+        let handMixer = null;
+        let currentAction = null;
+        let handAnimations = [];
+
+        let isCrouching = false;
+        const CROUCH_HEIGHT = 0.25;
+        const STAND_HEIGHT = 1.6;
+        const CROUCH_SPEED_MULT = 0.5;
+
         const state = {
-            moveX: 0, moveZ: 0, baseSpeed: 15, currentSpeed: 15, baseSpeedAim: 7.5,
+            moveX: 0, moveZ: 0, baseSpeed: 22.5,
+            currentSpeed: 22.5, baseSpeedAim: 10,
             eulerX: 0, eulerY: 0, jumpVel: 0, isGrounded: true,
             isSliding: false, slideDistance: 0, slideMaxDistance: 35,
             slideCooldown: 0, bobTimer: 0, slideDirX: 0, slideDirZ: 0,
-            currentCamY: 1.6, targetCamY: 1.6, currentTilt: 0, targetTilt: 0,
+            currentCamY: GROUND_Y + STAND_HEIGHT, targetCamY: GROUND_Y + STAND_HEIGHT, currentTilt: 0, targetTilt: 0,
             currentFOV: 75, targetFOV: 75,
             isSlideJumping: false, slideJumpTime: 0, slideJumpDuration: 0.8,
             slideJumpStartY: 0, slideJumpStartX: 0, slideJumpStartZ: 0,
@@ -496,7 +855,6 @@
         const lookSensitivity = 0.013;
         const gyroSensitivity = 0;
 
-        // 摇杆
         const joystickZone = document.getElementById('joystickZone');
         const joystickThumb = document.getElementById('joystickThumb');
         let jsActive = false, jsId = null;
@@ -507,7 +865,6 @@
             joystickZone.setPointerCapture(e.pointerId);
             sound.resume();
         });
-
         joystickZone.addEventListener('pointermove', e => {
             if (!jsActive || e.pointerId !== jsId) return;
             e.preventDefault(); e.stopPropagation();
@@ -520,7 +877,6 @@
             state.moveX = dx / maxR;
             state.moveZ = dy / maxR;
         });
-
         joystickZone.addEventListener('pointerup', e => {
             if (e.pointerId !== jsId) return;
             jsActive = false; jsId = null;
@@ -531,26 +887,18 @@
         // 陀螺仪
         if (window.DeviceOrientationEvent) {
             if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-                DeviceOrientationEvent.requestPermission().then(state => {
-                    if (state === 'granted') {
-                        window.addEventListener('deviceorientation', handleOrientation);
-                    }
+                DeviceOrientationEvent.requestPermission().then(s => {
+                    if (s === 'granted') window.addEventListener('deviceorientation', handleOrientation);
                 }).catch(console.error);
             } else {
                 window.addEventListener('deviceorientation', handleOrientation);
             }
         }
 
-        let initialBeta = null;
-        let initialGamma = null;
-
+        let initialBeta = null, initialGamma = null;
         function handleOrientation(event) {
             if (event.beta === null || event.gamma === null) return;
-            if (initialBeta === null) {
-                initialBeta = event.beta;
-                initialGamma = event.gamma;
-                return;
-            }
+            if (initialBeta === null) { initialBeta = event.beta; initialGamma = event.gamma; return; }
             let deltaBeta = (event.beta - initialBeta) * gyroSensitivity;
             let deltaGamma = (event.gamma - initialGamma) * gyroSensitivity;
             deltaBeta = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, deltaBeta));
@@ -583,10 +931,10 @@
             }
         });
 
-        // ===== 举镜按钮 =====
-        const aimBtn = document.getElementById('aimBtn');
+        // ===== 按钮事件 =====
         aimBtn.addEventListener('pointerdown', e => {
-            e.preventDefault(); 
+            e.preventDefault();
+            if (isReloading) return;
             sound.resume();
             state.isAiming = true;
             state.aimTransitionTime = 0;
@@ -594,19 +942,19 @@
             state.targetRotX = 0.01; state.targetRotY = -3.14; state.targetRotZ = 0.01;
             state.fireCooldown = 0;
         });
-        
         aimBtn.addEventListener('pointerup', e => {
-            e.preventDefault(); 
+            e.preventDefault();
+            if (isReloading) return;
             state.isAiming = false;
             state.aimTransitionTime = 0;
             state.targetScale = 0.03; state.targetX = 0.00; state.targetY = -0.35; state.targetZ = 0.20;
             state.targetRotX = 0.01; state.targetRotY = -3.14; state.targetRotZ = 0.01;
         });
 
-        // 跳跃/滑铲
         document.getElementById('jumpBtn').addEventListener('pointerdown', e => {
             e.preventDefault(); e.stopPropagation();
             sound.resume();
+            if (isReloading) return;
             if (state.isSliding) {
                 state.isSliding = false; state.isSlideJumping = true;
                 state.slideJumpTime = 0; state.slideJumpStartY = camera.position.y;
@@ -615,53 +963,137 @@
                 state.targetTilt = 0.05; return;
             }
             if (!state.isGrounded) return;
-            state.jumpVel = 7.5; state.isGrounded = false;
+            state.jumpVel = 14.5;
+            state.isGrounded = false;
         });
 
-        document.getElementById('slideBtn').addEventListener('pointerdown', e => {
+        slideBtn.addEventListener('pointerdown', e => {
             e.preventDefault(); e.stopPropagation();
             sound.resume();
-            if (!state.isGrounded || state.isSliding || state.slideCooldown > 0 || state.isSlideJumping) return;
-            state.isSliding = true; state.slideDistance = 0; state.slideCooldown = 0.3;
-            state.targetTilt = 0.18; state.targetCamY = 0.35;
-            const fwd = new THREE.Vector3(); camera.getWorldDirection(fwd);
-            fwd.y = 0; fwd.normalize();
-            state.slideDirX = fwd.x; state.slideDirZ = fwd.z;
-            state.currentSpeed = state.baseSpeed * 2.5; state.targetFOV = 110;
-            sound.playSlide();
-            state.slideSoundPlayed = true;
+            if (isReloading || state.isSlideJumping || state.isSliding || state.slideCooldown > 0) return;
+            const moving = Math.abs(state.moveX) > 0.05 || Math.abs(state.moveZ) > 0.05;
+            if (moving && state.isGrounded) {
+                state.isSliding = true;
+                state.slideDistance = 0;
+                state.slideCooldown = 0.3;
+                state.targetTilt = 0.18;
+                state.targetCamY = GROUND_Y + 0.35;
+                const fwd = new THREE.Vector3();
+                camera.getWorldDirection(fwd);
+                fwd.y = 0; fwd.normalize();
+                state.slideDirX = fwd.x; state.slideDirZ = fwd.z;
+                state.currentSpeed = state.baseSpeed * 2.5;
+                state.targetFOV = 110;
+                sound.playSlide();
+                state.slideSoundPlayed = true;
+                isCrouching = false;
+            } else if (state.isGrounded) {
+                if (isCrouching) {
+                    isCrouching = false;
+                    state.targetCamY = GROUND_Y + STAND_HEIGHT;
+                    slideBtn.textContent = '滑铲';
+                } else {
+                    isCrouching = true;
+                    state.targetCamY = GROUND_Y + CROUCH_HEIGHT;
+                    slideBtn.textContent = '起身';
+                    state.isSliding = false;
+                    state.targetTilt = 0;
+                }
+            }
         });
 
-        // ===== 开火逻辑 =====
+        reloadBtn.addEventListener('pointerdown', e => {
+            e.preventDefault(); e.stopPropagation();
+            sound.resume();
+            startReload();
+        });
+
+        function playReloadAnimation() {
+            if (!handMixer || handAnimations.length === 0) return;
+            if (currentAction) { currentAction.stop(); currentAction = null; }
+            const clip = handAnimations[0];
+            currentAction = handMixer.clipAction(clip);
+            currentAction.play();
+            currentAction.loop = THREE.LoopOnce;
+            currentAction.clampWhenFinished = true;
+            currentAction.timeScale = 1.0;
+            setTimeout(() => {
+                if (currentAction) { currentAction.stop(); currentAction = null; }
+            }, RELOAD_DURATION * 1000 + 50);
+        }
+
+        // ===== 开火 =====
         function performFire() {
-            if (!state.isAiming || state.aimTransitionTime < state.aimDuration) return;
+            if (isReloading || !state.isAiming || state.aimTransitionTime < state.aimDuration) return;
+            if (!consumeAmmo()) return;
 
             sound.playFire();
 
             const centerPos = new THREE.Vector3(0, -0.1, -0.5);
             centerPos.applyQuaternion(camera.quaternion);
             const muzzlePos = camera.position.clone().add(centerPos);
-            
             const forward = new THREE.Vector3(0, 0, -1);
             forward.applyQuaternion(camera.quaternion);
 
             createMuzzleFlash(muzzlePos, forward);
+            state.eulerX += 0.02;
 
-            state.eulerX += 0.03;
+            playerAccuracy = Math.max(ACC_MIN, playerAccuracy - ACC_SHOT_PENALTY);
+            accuracyRecoveryTimer = 0;
 
-            const centerX = window.innerWidth / 2;
-            const centerY = window.innerHeight / 2;
-            raycaster.setFromCamera(new THREE.Vector2(
-                (centerX / window.innerWidth) * 2 - 1,
-                -(centerY / window.innerHeight) * 2 + 1
-            ), camera);
+            lastGunshotPos = camera.position.clone();
+            lastGunshotTime = performance.now() / 1000;
+
+            const moving = Math.abs(state.moveX) > 0.05 || Math.abs(state.moveZ) > 0.05;
+            let effectiveAccuracy = playerAccuracy;
+            const dist = camera.position.distanceTo(enemies.length > 0 && enemies[0] ? enemies[0].position : new THREE.Vector3()) || 10;
+            if (dist > ACC_RANGE_PENALTY_DIST) effectiveAccuracy -= ACC_RANGE_PENALTY;
+            const spreadAngle = (1 - effectiveAccuracy) * 0.12;
+
+            const aimDir = forward.clone();
+            if (spreadAngle > 0) {
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.random() * spreadAngle;
+                const quat = new THREE.Quaternion().setFromUnitVectors(
+                    new THREE.Vector3(0, 0, -1),
+                    aimDir.clone().normalize()
+                );
+                const spreadVec = new THREE.Vector3(
+                    Math.sin(theta) * Math.sin(phi),
+                    Math.cos(theta) * Math.sin(phi),
+                    -Math.cos(phi)
+                ).normalize();
+                spreadVec.applyQuaternion(quat);
+                aimDir.copy(spreadVec);
+            }
+
+            if (moving && aimLagX !== undefined) {
+                const lagFactor = 1 - Math.exp(-0.016 / ACC_MOVE_LAG);
+                aimLagX += (spreadAngle * (Math.random() - 0.5) - aimLagX) * lagFactor;
+                aimLagY += (spreadAngle * (Math.random() - 0.5) - aimLagY) * lagFactor;
+            } else {
+                aimLagX *= 0.9;
+                aimLagY *= 0.9;
+            }
+
+            const finalDir = aimDir.clone();
+            if (Math.abs(aimLagX) > 0.001 || Math.abs(aimLagY) > 0.001) {
+                const right = new THREE.Vector3().crossVectors(finalDir, new THREE.Vector3(0, 1, 0)).normalize();
+                const up = new THREE.Vector3().crossVectors(right, finalDir).normalize();
+                finalDir.add(right.multiplyScalar(aimLagX)).add(up.multiplyScalar(aimLagY)).normalize();
+            }
+
+            const rayOrigin = camera.position.clone();
+            const rayDir = finalDir.clone().normalize();
+            raycaster.set(rayOrigin, rayDir);
 
             const targets = [];
             enemies.forEach(enemy => {
                 if (enemy.userData.isDead) return;
-                enemy.children.forEach(child => { if (child.isMesh) targets.push(child); });
+                enemy.traverse(child => { if (child.isMesh) targets.push(child); });
             });
             targets.push(gridFloor);
+            obstacles.forEach(o => targets.push(o));
 
             const intersects = raycaster.intersectObjects(targets);
 
@@ -671,12 +1103,10 @@
                 const point = hit.point;
                 const normal = hit.face.normal.clone();
                 normal.transformDirection(hitObj.matrixWorld);
-
                 createBulletTrail(muzzlePos, point);
 
-                if (hitObj === gridFloor) {
-                    createBulletHit(point, normal);
-                }
+                if (hitObj === gridFloor) createBulletHit(point, normal);
+                if (hitObj.userData.isObstacle) createBulletHit(point, normal);
 
                 let parentGroup = null;
                 let obj = hitObj;
@@ -690,30 +1120,31 @@
                 if (parentGroup && !parentGroup.userData.isDead) {
                     const part = hitObj.userData.bodyPart || 'torso';
                     let damage = 0;
-                    let isHeadshot = false;
-                    if (part === 'head') {
-                        damage = 100;
-                        isHeadshot = true;
-                    } else if (part === 'torso') {
-                        damage = 25;
-                    } else {
-                        damage = 15;
-                    }
+                    if (part === 'head') { damage = 100; }
+                    else if (part === 'leg') { damage = 15; }
+                    else if (part === 'torso') { damage = 25; }
+                    else { damage = 15; }
 
                     const data = parentGroup.userData;
                     data.hp = Math.max(0, data.hp - damage);
                     data.updateHP();
 
-                    const worldPos = new THREE.Vector3();
-                    parentGroup.getWorldPosition(worldPos);
-                    createDamageFloat(worldPos, damage, isHeadshot);
+                    if (enemyAIStates.has(parentGroup)) {
+                        const aiState = enemyAIStates.get(parentGroup);
+                        if (aiState.state !== AI_STATES.HIT) {
+                            aiState.state = AI_STATES.HIT;
+                            aiState.hitTimer = 0;
+                        }
+                    }
 
                     if (data.hp <= 0 && !data.isDead) {
-                        data.isDead = true; data.deathTimer = 0;
-                        const dir = Math.random() > 0.5 ? -1 : 1;
-                        parentGroup.userData.ragdollDir = dir;
-                        parentGroup.userData.ragdollTimer = 0;
-
+                        data.isDead = true;
+                        data.deathTimer = 0;
+                        data.deathPosition.copy(parentGroup.position);
+                        
+                        createDeathMark(data.deathPosition);
+                        parentGroup.visible = false;
+                        
                         const now = performance.now() / 1000;
                         if (now - lastKillTime <= STREAK_WINDOW && lastKillTime > 0) {
                             killStreakCount++;
@@ -721,8 +1152,7 @@
                             killStreakCount = 1;
                         }
                         lastKillTime = now;
-
-                        updateKillUI(isHeadshot, killStreakCount);
+                        updateKillUI(killStreakCount);
                     }
                 }
             } else {
@@ -733,191 +1163,29 @@
             }
         }
 
-        // ============================================================
-        // ===== 核心：带缓存的 GLB 加载器（jsDelivr CDN 加速） =====
-        // ============================================================
-        const loader = new GLTFLoader();
-        // ✅ 使用 jsDelivr CDN 加速（仓库已公开）
-const MODEL_URL = "./fps_smg9_animated.glb";
-        const CACHE_NAME = 'fps_model_v2';
-        const CACHE_KEY = 'fps_smg9_animated.glb';
-
-        // 模型加载完成后挂载到场景
-        function onModelLoaded(gltf) {
-            // 清空 handGroup 原有内容
-            while (handGroup.children.length > 0) {
-                const child = handGroup.children[0];
-                if (child.geometry) child.geometry.dispose();
-                if (child.material) child.material.dispose();
-                handGroup.remove(child);
-            }
-
-            gltf.scene.traverse((child) => {
-                if (child.isMesh) {
-                    child.castShadow = true;
-                    child.receiveShadow = true;
-                }
-            });
-
-            const initScale = 0.03;
-            const initX = 0.00;
-            const initY = -0.35;
-            const initZ = 0.20;
-            const initRotX = 0.01;
-            const initRotY = -3.14;
-            const initRotZ = 0.01;
-
-            state.currentScale = initScale;
-            state.currentX = initX;
-            state.currentY = initY;
-            state.currentZ = initZ;
-            state.currentRotX = initRotX;
-            state.currentRotY = initRotY;
-            state.currentRotZ = initRotZ;
-            state.targetScale = initScale;
-            state.targetX = initX;
-            state.targetY = initY;
-            state.targetZ = initZ;
-            state.targetRotX = initRotX;
-            state.targetRotY = initRotY;
-            state.targetRotZ = initRotZ;
-
-            gltf.scene.scale.setScalar(initScale);
-            gltf.scene.position.set(initX, initY, initZ);
-            gltf.scene.rotation.set(initRotX, initRotY, initRotZ);
-            handGroup.add(gltf.scene);
-
-            loadingText.style.opacity = '0';
-            progressBar.style.display = 'none';
-            setTimeout(() => {
-                loadingText.style.display = 'none';
-            }, 500);
-        }
-
-        // 显示进度
-        function updateProgress(percent) {
-            progressBar.style.display = 'block';
-            progressFill.style.width = Math.min(100, percent) + '%';
-            loadingText.textContent = `⏳ 下载中 ${Math.min(100, Math.round(percent))}%`;
-        }
-
-        // 主加载函数：先查缓存，没有再下载
-        async function loadModelWithCache() {
-            try {
-                // 1. 尝试打开缓存
-                const cache = await caches.open(CACHE_NAME);
-                
-                // 2. 检查缓存中是否有模型
-                const cachedResponse = await cache.match(CACHE_KEY);
-                
-                if (cachedResponse) {
-                    // ✅ 有缓存 → 直接加载（秒开）
-                    loadingText.textContent = '📦 从缓存加载...';
-                    const arrayBuffer = await cachedResponse.arrayBuffer();
-                    const blob = new Blob([arrayBuffer], { type: 'model/gltf-binary' });
-                    const url = URL.createObjectURL(blob);
-                    
-                    loader.load(url, function(gltf) {
-                        onModelLoaded(gltf);
-                        URL.revokeObjectURL(url);
-                    }, undefined, function(err) {
-                        loadingText.textContent = '❌ 缓存损坏，重新下载...';
-                        console.error('缓存加载失败:', err);
-                        cache.delete(CACHE_KEY);
-                        // 递归调用重新下载
-                        downloadAndCache();
-                    });
-                    return;
-                }
-
-                // ❌ 无缓存 → 下载
-                await downloadAndCache();
-
-            } catch (error) {
-                console.error('缓存操作失败:', error);
-                // 降级：直接下载（不缓存）
-                loadingText.textContent = '⚠️ 缓存不可用，直接下载...';
-                progressBar.style.display = 'block';
-                loader.load(MODEL_URL, function(gltf) {
-                    onModelLoaded(gltf);
-                }, function(xhr) {
-                    const percent = (xhr.loaded / xhr.total) * 100;
-                    updateProgress(percent);
-                }, function(err) {
-                    loadingText.textContent = '❌ 下载失败，请检查网络';
-                    console.error('下载失败:', err);
-                });
-            }
-        }
-
-        // 下载并存入缓存
-        async function downloadAndCache() {
-            try {
-                loadingText.textContent = '⏳ 连接服务器...';
-                progressBar.style.display = 'block';
-                progressFill.style.width = '0%';
-
-                const response = await fetch(MODEL_URL);
-                if (!response.ok) throw new Error('HTTP ' + response.status);
-
-                const contentLength = response.headers.get('content-length');
-                const total = parseInt(contentLength, 10);
-                let loaded = 0;
-
-                const reader = response.body.getReader();
-                const chunks = [];
-
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-                    chunks.push(value);
-                    loaded += value.length;
-                    if (total) {
-                        const percent = (loaded / total) * 100;
-                        updateProgress(percent);
-                    } else {
-                        loadingText.textContent = `⏳ 下载中 ${Math.round(loaded / 1024)}KB`;
-                    }
-                }
-
-                // 合并数据
-                const arrayBuffer = await new Blob(chunks).arrayBuffer();
-                loadingText.textContent = '💾 保存到缓存...';
-
-                // 存入缓存
-                const cache = await caches.open(CACHE_NAME);
-                const cachedResponse = new Response(arrayBuffer, {
-                    headers: { 'Content-Type': 'model/gltf-binary' }
-                });
-                await cache.put(CACHE_KEY, cachedResponse.clone());
-
-                // 加载到场景
-                const blob = new Blob([arrayBuffer], { type: 'model/gltf-binary' });
-                const url = URL.createObjectURL(blob);
-                loader.load(url, function(gltf) {
-                    onModelLoaded(gltf);
-                    URL.revokeObjectURL(url);
-                }, undefined, function(err) {
-                    loadingText.textContent = '❌ 加载失败';
-                    console.error('加载失败:', err);
-                });
-
-            } catch (error) {
-                loadingText.textContent = '❌ 下载失败: ' + error.message;
-                console.error('下载失败:', error);
-                progressBar.style.display = 'none';
-            }
-        }
-
-        // ===== 启动加载 =====
-        loadModelWithCache();
-
         // ===== 动画循环 =====
         const clock = new THREE.Clock();
 
         function update(dt) {
-            dt = Math.min(dt, 0.1);
+            dt = Math.min(dt, 0.05);
             const moving = Math.abs(state.moveX) > 0.05 || Math.abs(state.moveZ) > 0.05;
+
+            if (isReloading) {
+                reloadTimer += dt;
+                const progress = Math.min(reloadTimer / RELOAD_DURATION, 1);
+                reloadFill.style.width = (progress * 100) + '%';
+                if (reloadTimer >= RELOAD_DURATION) finishReload();
+            }
+            
+            if (handMixer) handMixer.update(dt);
+            if (enemyMixer) enemyMixer.update(dt);
+
+            if (isReloading && state.isAiming) {
+                state.isAiming = false;
+                state.aimTransitionTime = 0;
+                state.targetScale = 0.03; state.targetX = 0.00; state.targetY = -0.35; state.targetZ = 0.20;
+                state.targetRotX = 0.01; state.targetRotY = -3.14; state.targetRotZ = 0.01;
+            }
 
             if (state.isAiming || state.aimTransitionTime < state.aimDuration) {
                 state.aimTransitionTime += dt;
@@ -938,7 +1206,7 @@ const MODEL_URL = "./fps_smg9_animated.glb";
                 model.rotation.set(state.currentRotX, state.currentRotY, state.currentRotZ);
             }
 
-            if (state.isAiming && state.aimTransitionTime >= state.aimDuration) {
+            if (!isReloading && state.isAiming && state.aimTransitionTime >= state.aimDuration) {
                 state.fireCooldown -= dt;
                 if (state.fireCooldown <= 0) {
                     performFire();
@@ -948,7 +1216,7 @@ const MODEL_URL = "./fps_smg9_animated.glb";
                 state.fireCooldown = 0;
             }
 
-            if (moving && state.isGrounded && !state.isSliding && !state.isSlideJumping) {
+            if (moving && state.isGrounded && !state.isSliding && !state.isSlideJumping && !isReloading) {
                 state.footstepTimer += dt;
                 if (state.footstepTimer >= state.footstepInterval) {
                     state.footstepTimer = 0;
@@ -958,10 +1226,9 @@ const MODEL_URL = "./fps_smg9_animated.glb";
                 state.footstepTimer = 0;
             }
 
-            // 特效生命周期
             for (let i = bulletHoles.length - 1; i >= 0; i--) {
                 const h = bulletHoles[i];
-                h.userData.lifeTime -= dt;
+                if (h.userData.lifeTime !== undefined) h.userData.lifeTime -= dt;
                 if (h.userData.lifeTime <= 0) {
                     scene.remove(h); h.geometry.dispose(); h.material.dispose();
                     bulletHoles.splice(i, 1);
@@ -970,60 +1237,338 @@ const MODEL_URL = "./fps_smg9_animated.glb";
             for (let i = muzzleFlashes.length - 1; i >= 0; i--) {
                 const f = muzzleFlashes[i];
                 f.userData.lifeTime -= dt;
-                f.children.forEach(sprite => {
-                    sprite.material.opacity -= dt * 5;
-                });
-                if (f.userData.lifeTime <= 0) {
-                    scene.remove(f);
-                    f.children.forEach(sprite => {
-                        sprite.material.map.dispose();
-                        sprite.material.dispose();
-                    });
+                f.material.opacity -= dt * 10;
+                if (f.userData.lifeTime <= 0 || f.material.opacity <= 0) {
+                    scene.remove(f); f.material.map.dispose(); f.material.dispose();
                     muzzleFlashes.splice(i, 1);
                 }
             }
             for (let i = bulletTrails.length - 1; i >= 0; i--) {
                 const t = bulletTrails[i];
                 t.userData.lifeTime -= dt;
-                t.material.opacity -= dt * 4;
+                t.material.opacity -= dt * 8;
                 if (t.userData.lifeTime <= 0 || t.material.opacity <= 0) {
                     scene.remove(t); t.geometry.dispose(); t.material.dispose();
                     bulletTrails.splice(i, 1);
                 }
             }
 
-            // 敌人逻辑
+            accuracyRecoveryTimer += dt;
+            if (accuracyRecoveryTimer >= ACC_RECOVERY_TIME && playerAccuracy < ACC_MAX) {
+                playerAccuracy = Math.min(ACC_MAX, playerAccuracy + ACC_RECOVERY_RATE);
+                accuracyRecoveryTimer = 0;
+            }
+
             enemies.forEach(enemy => {
                 const data = enemy.userData;
+                if (!enemyAIStates.has(enemy)) initAIState(enemy);
+                const ai = enemyAIStates.get(enemy);
+
                 if (data.isDead) {
                     data.deathTimer += dt;
-                    if (data.deathTimer < 2.0) {
-                        const progress = data.deathTimer / 2.0;
-                        const dir = data.ragdollDir || 1;
-                        enemy.rotation.z = dir * progress * 0.5; 
-                        enemy.position.y -= progress * 0.2;
-                    } else {
+                    if (data.deathTimer >= 2.0) {
                         data.resetTimer += dt;
                         if (data.resetTimer > 2.0) {
-                            data.isDead = false; data.hp = data.maxHp;
-                            data.deathTimer = 0; data.resetTimer = 0;
+                            removeDeathMark();
+                            data.isDead = false;
+                            data.hp = data.maxHp;
+                            data.deathTimer = 0;
+                            data.resetTimer = 0;
+                            enemy.position.set(ENEMY_SPAWN.x, footOffset, ENEMY_SPAWN.z);
                             enemy.rotation.z = 0;
-                            enemy.position.y = -10.0 + 7.5;
+                            enemy.visible = true;
                             data.updateHP();
+                            if (enemyAction) {
+                                enemyAction.stop();
+                                enemyAction.play();
+                            }
+                            const newAI = initAIState(enemy);
+                            newAI.retreatDir.set(0, 0, 1);
                         }
+                    }
+                    return;
+                }
+
+                enemy.position.y = footOffset;
+
+                const playerPos = camera.position.clone();
+                const toPlayer = new THREE.Vector3().subVectors(playerPos, enemy.position);
+                const distToPlayer = toPlayer.length();
+                const dirToPlayer = toPlayer.clone().normalize();
+                const enemyFwd = new THREE.Vector3(0, 0, -1).applyQuaternion(enemy.quaternion);
+
+                let canSeePlayer = false;
+                if (distToPlayer <= AI_CONFIG.VISUAL_RANGE) {
+                    const angleToPlayer = enemyFwd.angleTo(dirToPlayer);
+                    if (angleToPlayer <= AI_CONFIG.VISUAL_ANGLE / 2) {
+                        const visionRay = new THREE.Raycaster(enemy.position.clone().add(new THREE.Vector3(0, 1, 0)), dirToPlayer);
+                        const visionTargets = [gridFloor, ...obstacles];
+                        const visionHits = visionRay.intersectObjects(visionTargets);
+                        let blocked = false;
+                        for (const vh of visionHits) {
+                            if (vh.distance < distToPlayer) { blocked = true; break; }
+                        }
+                        canSeePlayer = !blocked;
+                    }
+                }
+
+                const now = performance.now() / 1000;
+                if (lastGunshotPos && (now - lastGunshotTime) <= AI_CONFIG.HEAR_DELAY) {
+                    const distToShot = enemy.position.distanceTo(lastGunshotPos);
+                    if (distToShot <= AI_CONFIG.HEAR_RANGE && ai.state === AI_STATES.IDLE) {
+                        ai.lastKnownPlayerPos = lastGunshotPos.clone();
+                        ai.state = AI_STATES.ALERT;
+                        ai.stateTimer = 0;
+                    }
+                }
+
+                if (canSeePlayer && ai.state === AI_STATES.IDLE) {
+                    const dot = enemyFwd.dot(dirToPlayer);
+                    if (dot < 0.3) {
+                        ai.turnTimer += dt;
+                        if (ai.turnTimer >= AI_CONFIG.BACK_TURN_DELAY) {
+                            ai.turnTimer = 0;
+                            ai.state = AI_STATES.COMBAT;
+                            ai.isPlayerVisible = true;
+                            ai.lastKnownPlayerPos = playerPos.clone();
+                        }
+                    } else {
+                        ai.turnTimer = 0;
+                        ai.state = AI_STATES.COMBAT;
+                        ai.isPlayerVisible = true;
+                        ai.lastKnownPlayerPos = playerPos.clone();
+                    }
+                } else if (canSeePlayer && ai.state !== AI_STATES.HIT) {
+                    ai.isPlayerVisible = true;
+                    ai.lastKnownPlayerPos = playerPos.clone();
+                    ai.turnTimer = 0;
+                }
+
+                switch (ai.state) {
+                    case AI_STATES.IDLE: {
+                        ai.stateTimer += dt;
+                        ai.idleRotateTimer += dt;
+                        if (ai.idleRotateTimer > 3 + Math.random() * 2) {
+                            ai.idleRotateTimer = 0;
+                            ai.idleRotateTargetY = enemy.rotation.y + (Math.random() - 0.5) * 1.5;
+                        }
+                        let rotDiff = ai.idleRotateTargetY - enemy.rotation.y;
+                        if (Math.abs(rotDiff) > 0.01) {
+                            enemy.rotation.y += Math.sign(rotDiff) * dt * 0.5;
+                        }
+                        if (canSeePlayer && distToPlayer <= AI_CONFIG.VISUAL_RANGE) {
+                            ai.state = AI_STATES.COMBAT;
+                            ai.isPlayerVisible = true;
+                            ai.lastKnownPlayerPos = playerPos.clone();
+                        }
+                        break;
+                    }
+                    case AI_STATES.ALERT: {
+                        const lookTarget = ai.lastKnownPlayerPos || playerPos;
+                        const lookDir = new THREE.Vector3().subVectors(lookTarget, enemy.position).normalize();
+                        const targetRot = Math.atan2(lookDir.x, lookDir.z);
+                        let rotDiff = targetRot - enemy.rotation.y;
+                        while (rotDiff > Math.PI) rotDiff -= Math.PI * 2;
+                        while (rotDiff < -Math.PI) rotDiff += Math.PI * 2;
+                        enemy.rotation.y += rotDiff * dt * 3;
+                        enemy.position.x += Math.sin(now * 4) * 0.02 * dt;
+                        if (canSeePlayer) {
+                            ai.state = AI_STATES.COMBAT;
+                            ai.isPlayerVisible = true;
+                            ai.lastKnownPlayerPos = playerPos.clone();
+                        } else {
+                            ai.stateTimer += dt;
+                            if (ai.stateTimer > 4) {
+                                ai.state = AI_STATES.IDLE;
+                                ai.stateTimer = 0;
+                            }
+                        }
+                        break;
+                    }
+                    case AI_STATES.COMBAT: {
+                        ai.isPlayerVisible = canSeePlayer;
+                        if (!canSeePlayer && ai.lastKnownPlayerPos) {
+                            ai.state = AI_STATES.ALERT;
+                            ai.stateTimer = 0;
+                            break;
+                        }
+                        if (canSeePlayer) ai.lastKnownPlayerPos = playerPos.clone();
+                        const combatDir = new THREE.Vector3().subVectors(playerPos, enemy.position).normalize();
+                        const combatTargetRot = Math.atan2(combatDir.x, combatDir.z);
+                        let combatRotDiff = combatTargetRot - enemy.rotation.y;
+                        while (combatRotDiff > Math.PI) combatRotDiff -= Math.PI * 2;
+                        while (combatRotDiff < -Math.PI) combatRotDiff += Math.PI * 2;
+                        enemy.rotation.y += combatRotDiff * dt * 5;
+
+                        const hpRatio = data.hp / data.maxHp;
+                        if (hpRatio <= AI_CONFIG.RETREAT_THRESHOLD && !ai.retreating) {
+                            ai.retreating = true;
+                            ai.strafeTimer = 0;
+                            const retreatTarget = new THREE.Vector3(ENEMY_SPAWN.x, 0, ENEMY_SPAWN.z);
+                            ai.retreatDir.subVectors(retreatTarget, enemy.position).normalize();
+                            ai.retreatDir.y = 0;
+                        }
+
+                        if (ai.retreating) {
+                            const retreatMove = ai.retreatDir.clone().multiplyScalar(AI_CONFIG.RETREAT_SPEED * dt);
+                            const newPos = enemy.position.clone().add(retreatMove);
+                            let blocked = false;
+                            for (const obs of obstacles) {
+                                const obsBox = new THREE.Box3().setFromObject(obs);
+                                const testPos = newPos.clone();
+                                testPos.y = GROUND_Y + 0.5;
+                                const point = new THREE.Vector3(testPos.x, testPos.y, testPos.z);
+                                if (obsBox.containsPoint(point)) { blocked = true; break; }
+                            }
+                            if (blocked) {
+                                ai.strafeTimer += dt;
+                                if (ai.strafeTimer > 0.5) {
+                                    ai.strafeDir *= -1;
+                                    ai.strafeTimer = 0;
+                                }
+                                const strafeDir = new THREE.Vector3().crossVectors(ai.retreatDir, new THREE.Vector3(0, 1, 0)).normalize();
+                                enemy.position.x += strafeDir.x * ai.strafeDir * AI_CONFIG.RETREAT_SPEED * 0.5 * dt;
+                                enemy.position.z += strafeDir.z * ai.strafeDir * AI_CONFIG.RETREAT_SPEED * 0.5 * dt;
+                            } else {
+                                enemy.position.x += retreatMove.x;
+                                enemy.position.z += retreatMove.z;
+                            }
+                            if (distToPlayer > AI_CONFIG.VISUAL_RANGE) {
+                                ai.retreating = false;
+                            }
+                        }
+
+                        if (ai.shotsFired < AI_CONFIG.RELOAD_SHOT_COUNT) {
+                            ai.combatFireTimer -= dt;
+                            const fireInterval = ai.retreating ?
+                                AI_CONFIG.RETREAT_FIRE_MIN + Math.random() * (AI_CONFIG.RETREAT_FIRE_MAX - AI_CONFIG.RETREAT_FIRE_MIN) :
+                                AI_CONFIG.COMBAT_FIRE_MIN + Math.random() * (AI_CONFIG.COMBAT_FIRE_MAX - AI_CONFIG.COMBAT_FIRE_MIN);
+                            if (ai.combatFireTimer <= 0) {
+                                ai.combatFireTimer = fireInterval;
+                                const enemyFireDir = new THREE.Vector3().subVectors(playerPos, enemy.position).normalize();
+                                const enemySpread = (1 - 0.4) * 0.1;
+                                const theta2 = Math.random() * Math.PI * 2;
+                                const phi2 = Math.random() * enemySpread;
+                                const quat2 = new THREE.Quaternion().setFromUnitVectors(
+                                    new THREE.Vector3(0, 0, -1),
+                                    enemyFireDir
+                                );
+                                const spreadVec2 = new THREE.Vector3(
+                                    Math.sin(theta2) * Math.sin(phi2),
+                                    Math.cos(theta2) * Math.sin(phi2),
+                                    -Math.cos(phi2)
+                                ).normalize();
+                                spreadVec2.applyQuaternion(quat2);
+                                const enemyRayOrigin = enemy.position.clone().add(new THREE.Vector3(0, 1, 0));
+                                const enemyRay = new THREE.Raycaster(enemyRayOrigin, spreadVec2);
+                                const enemyTargets = [gridFloor, ...obstacles];
+                                const enemyHits = enemyRay.intersectObjects(enemyTargets);
+                                let playerBlocked = false;
+                                for (const eh of enemyHits) {
+                                    if (eh.distance < distToPlayer) { playerBlocked = true; break; }
+                                }
+                                if (!playerBlocked) {
+                                    const hitChance = 0.5;
+                                    if (Math.random() < hitChance) {
+                                        const dmg = Math.random() < 0.1 ? 100 : (Math.random() < 0.3 ? 25 : 15);
+                                        playerHP = Math.max(0, playerHP - dmg);
+                                        if (playerHP <= 0 && !isPlayerDead) {
+                                            isPlayerDead = true;
+                                            playerDeathTimer = 0;
+                                            createDeathMark(camera.position);
+                                            handGroup.visible = false;
+                                        }
+                                    }
+                                    const trailEnd = playerPos.clone().add(new THREE.Vector3(
+                                        (Math.random() - 0.5) * 0.3,
+                                        (Math.random() - 0.5) * 0.3,
+                                        (Math.random() - 0.5) * 0.3
+                                    ));
+                                    createBulletTrail(enemyRayOrigin, trailEnd);
+                                }
+                                ai.shotsFired++;
+                            }
+                        } else {
+                            ai.state = AI_STATES.RELOAD;
+                            ai.reloadTimer = 0;
+                        }
+                        break;
+                    }
+                    case AI_STATES.RELOAD: {
+                        ai.reloadTimer += dt;
+                        if (ai.reloadTimer >= AI_CONFIG.RELOAD_DURATION_AI) {
+                            ai.shotsFired = 0;
+                            ai.reloadTimer = 0;
+                            ai.state = AI_STATES.COMBAT;
+                            ai.combatFireTimer = 0.3 + Math.random() * 0.3;
+                        }
+                        break;
+                    }
+                    case AI_STATES.HIT: {
+                        ai.hitTimer += dt;
+                        enemy.rotation.x = -0.15 * (1 - Math.min(ai.hitTimer / 0.2, 1));
+                        if (ai.hitTimer >= 0.2) {
+                            enemy.rotation.x = 0;
+                            if (canSeePlayer) {
+                                ai.state = AI_STATES.COMBAT;
+                                ai.isPlayerVisible = true;
+                                ai.lastKnownPlayerPos = playerPos.clone();
+                            } else {
+                                ai.state = AI_STATES.ALERT;
+                                ai.stateTimer = 0;
+                                ai.lastKnownPlayerPos = playerPos.clone();
+                            }
+                        }
+                        break;
                     }
                 }
             });
 
-            // 跑酷物理
+            if (isPlayerDead && !handGroup.visible) {
+                playerDeathTimer += dt;
+                if (playerDeathTimer >= 2.0) {
+                    removeDeathMark();
+                    isPlayerDead = false;
+                    playerHP = MAX_PLAYER_HP;
+                    playerDeathTimer = 0;
+                    camera.position.set(PLAYER_SPAWN.x, PLAYER_SPAWN.y + STAND_HEIGHT, PLAYER_SPAWN.z);
+                    state.currentCamY = camera.position.y;
+                    state.targetCamY = state.currentCamY;
+                    state.eulerX = 0;
+                    state.eulerY = 0;
+                    state.moveX = 0;
+                    state.moveZ = 0;
+                    state.isSliding = false;
+                    state.isSlideJumping = false;
+                    state.jumpVel = 0;
+                    state.isGrounded = true;
+                    state.currentSpeed = state.baseSpeed;
+                    state.bobTimer = 0;
+                    if (state.isAiming) {
+                        state.isAiming = false;
+                        state.targetScale = 0.03; state.targetX = 0.00; state.targetY = -0.35; state.targetZ = 0.20;
+                        state.targetRotX = 0.01; state.targetRotY = -3.14; state.targetRotZ = 0.01;
+                    }
+                    handGroup.visible = true;
+                    currentAmmo = MAG_SIZE;
+                    reserveAmmo = 900;
+                    updateAmmoHUD();
+                }
+            }
+
+            xVal.textContent = camera.position.x.toFixed(2);
+            yVal.textContent = camera.position.y.toFixed(2);
+            zVal.textContent = camera.position.z.toFixed(2);
+
             if (state.isSlideJumping) {
                 state.slideJumpTime += dt;
                 const progress = state.slideJumpTime / state.slideJumpDuration;
                 if (progress >= 1.0) {
                     state.isSlideJumping = false; state.isGrounded = true;
-                    state.currentCamY = 1.6; state.targetCamY = 1.6;
+                    state.currentCamY = GROUND_Y + (isCrouching ? CROUCH_HEIGHT : STAND_HEIGHT);
+                    state.targetCamY = state.currentCamY;
                     state.targetTilt = 0; state.currentSpeed = state.baseSpeed;
-                    camera.position.y = 1.6;
+                    camera.position.y = state.currentCamY;
                 } else {
                     const heightCurve = Math.sin(progress * Math.PI) * state.slideJumpMaxHeight;
                     let speedMultiplier;
@@ -1047,7 +1592,8 @@ const MODEL_URL = "./fps_smg9_animated.glb";
                 state.slideDistance += state.currentSpeed * dt;
                 if (state.slideDistance >= state.slideMaxDistance) {
                     state.isSliding = false; state.slideDistance = 0;
-                    state.targetTilt = 0; state.targetCamY = 1.6;
+                    state.targetTilt = 0;
+                    state.targetCamY = GROUND_Y + (isCrouching ? CROUCH_HEIGHT : STAND_HEIGHT);
                     state.currentSpeed = state.baseSpeed;
                 }
             }
@@ -1055,7 +1601,8 @@ const MODEL_URL = "./fps_smg9_animated.glb";
 
             if (!state.isSliding && !state.isSlideJumping && state.isGrounded) {
                 const speedBase = state.isAiming ? state.baseSpeedAim : state.baseSpeed;
-                const targetSpd = moving ? speedBase : 0;
+                const crouchMult = isCrouching ? CROUCH_SPEED_MULT : 1.0;
+                const targetSpd = moving ? speedBase * crouchMult : 0;
                 state.currentSpeed += (targetSpd - state.currentSpeed) * 8 * dt;
             }
 
@@ -1074,41 +1621,56 @@ const MODEL_URL = "./fps_smg9_animated.glb";
             }
 
             if (!state.isGrounded && !state.isSlideJumping) {
-                state.jumpVel -= 15 * dt;
+                state.jumpVel -= 35 * dt;
                 state.currentCamY += state.jumpVel * dt;
-                if (state.currentCamY <= 1.6) {
-                    state.currentCamY = 1.6; state.jumpVel = 0;
-                    state.isGrounded = true; state.targetCamY = 1.6;
+                const groundHeight = GROUND_Y + (isCrouching ? CROUCH_HEIGHT : STAND_HEIGHT);
+                if (state.currentCamY <= groundHeight) {
+                    state.currentCamY = groundHeight;
+                    state.jumpVel = 0;
+                    state.isGrounded = true;
+                    state.targetCamY = state.currentCamY;
                     state.slideCooldown = 0;
                 }
             }
 
             if (!state.isSlideJumping) {
-                if (state.isGrounded && !state.isSliding) state.currentCamY += (state.targetCamY - state.currentCamY) * 12 * dt;
-                else if (state.isSliding) state.currentCamY += (state.targetCamY - state.currentCamY) * 10 * dt;
+                if (state.isGrounded && !state.isSliding) {
+                    state.currentCamY += (state.targetCamY - state.currentCamY) * 12 * dt;
+                } else if (state.isSliding) {
+                    state.currentCamY += (state.targetCamY - state.currentCamY) * 10 * dt;
+                }
                 camera.position.y = state.currentCamY;
             }
 
             state.currentTilt += (state.targetTilt - state.currentTilt) * 10 * dt;
             camera.rotation.z = state.currentTilt;
-
             camera.rotation.order = 'YXZ';
             camera.rotation.y = state.eulerY;
             camera.rotation.x = state.eulerX;
 
-            if (moving && state.isGrounded && !state.isSliding && !state.isSlideJumping) {
+            if (moving && state.isGrounded && !state.isSliding && !state.isSlideJumping && !isReloading) {
                 state.bobTimer += dt * 8;
                 const swing = Math.sin(state.bobTimer);
-                camera.position.x += swing * 0.025;
-                camera.position.y += (1 - Math.abs(swing)) * 0.015;
+                if (state.isAiming) {
+                    camera.position.x += swing * 0.006;
+                    camera.position.y += (1 - Math.abs(swing)) * 0.004;
+                } else {
+                    camera.position.x += swing * 0.025;
+                    camera.position.y += (1 - Math.abs(swing)) * 0.015;
+                }
             } else {
                 state.bobTimer *= 0.9;
             }
 
-            if (moving && state.isGrounded && !state.isSliding && !state.isSlideJumping) {
+            if (moving && state.isGrounded && !state.isSliding && !state.isSlideJumping && !isReloading) {
                 const swing = Math.sin(state.bobTimer);
-                handGroup.position.x = 0.25 + swing * 0.03;
-                handGroup.position.y = -0.35 + (1 - Math.abs(swing)) * 0.015;
+                if (state.isAiming) {
+                    handGroup.position.x = 0.25 + swing * 0.008;
+                    handGroup.position.y = -0.35 + (1 - Math.abs(swing)) * 0.004;
+                } else {
+                    handGroup.position.x = 0.25 + swing * 0.03;
+                    handGroup.position.y = -0.35 + (1 - Math.abs(swing)) * 0.015;
+                }
             } else {
                 handGroup.position.x += (0.25 - handGroup.position.x) * 8 * dt;
                 handGroup.position.y += (-0.35 - handGroup.position.y) * 8 * dt;
@@ -1122,11 +1684,19 @@ const MODEL_URL = "./fps_smg9_animated.glb";
         }
         animate();
 
+        // 设置玩家初始位置
+        camera.position.set(PLAYER_SPAWN.x, PLAYER_SPAWN.y + STAND_HEIGHT, PLAYER_SPAWN.z);
+
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
+
+        updateAmmoHUD();
+
+        // 自动加载模型
+        startLoadingModels();
     </script>
 </body>
 </html>
