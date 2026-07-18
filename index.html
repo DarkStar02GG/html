@@ -1,9 +1,357 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-    <meta http-equiv="refresh" content="0; url=https://ppt.beegoedu.com/Lrk/9mzHfj/SKhPiw7o?kfc=NzB5bHoudTR4dGo1My5qdnQvQi0tVmdJM21p">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>动态网址按钮 · 数组驱动</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background: linear-gradient(145deg, #f5f7fc 0%, #e9edf5 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
+      padding: 20px;
+      margin: 0;
+    }
+    .card {
+      max-width: 800px;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.75);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-radius: 48px;
+      padding: 40px 32px;
+      box-shadow: 0 20px 40px -12px rgba(0, 20, 40, 0.25),
+                  0 8px 24px -6px rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      transition: 0.25s ease;
+    }
+    h1 {
+      font-weight: 600;
+      font-size: 1.8rem;
+      letter-spacing: -0.01em;
+      color: #0b1a33;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid rgba(60, 80, 120, 0.12);
+    }
+    h1 small {
+      font-size: 1rem;
+      font-weight: 400;
+      color: #3d4f6b;
+      background: rgba(60, 80, 120, 0.08);
+      padding: 2px 14px;
+      border-radius: 40px;
+      margin-left: 8px;
+    }
+    .subtitle {
+      color: #2e405e;
+      font-size: 0.95rem;
+      margin-bottom: 28px;
+      opacity: 0.8;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .badge {
+      background: #1f2b44;
+      color: white;
+      font-size: 0.8rem;
+      font-weight: 500;
+      padding: 4px 16px;
+      border-radius: 30px;
+      letter-spacing: 0.3px;
+      background: #2a3a5c;
+    }
+    .button-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+      gap: 14px;
+      margin: 28px 0 18px;
+    }
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: white;
+      border: none;
+      padding: 14px 6px;
+      border-radius: 60px;
+      font-weight: 500;
+      font-size: 0.95rem;
+      color: #1a2844;
+      box-shadow: 0 6px 14px rgba(0, 20, 40, 0.04), 0 2px 4px rgba(0, 0, 0, 0.02);
+      transition: all 0.15s ease;
+      cursor: pointer;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      backdrop-filter: blur(2px);
+      background: rgba(255, 255, 255, 0.8);
+      letter-spacing: 0.3px;
+      position: relative;
+    }
+    .btn:hover {
+      transform: translateY(-3px) scale(1.01);
+      background: white;
+      box-shadow: 0 14px 24px -8px rgba(20, 40, 80, 0.15);
+      border-color: #8ba0d0;
+    }
+    .btn:active {
+      transform: scale(0.96);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    }
+    .btn .index {
+      display: inline-block;
+      background: #1f2b44;
+      color: white;
+      font-size: 0.7rem;
+      font-weight: 600;
+      width: 22px;
+      height: 22px;
+      line-height: 22px;
+      text-align: center;
+      border-radius: 30px;
+      background: #344b74;
+      margin-right: 4px;
+      flex-shrink: 0;
+    }
+    .btn .url-preview {
+      font-size: 0.7rem;
+      opacity: 0.6;
+      font-weight: 400;
+      max-width: 70px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      display: inline-block;
+      vertical-align: middle;
+      color: #2f4870;
+    }
+    .info-panel {
+      margin-top: 30px;
+      padding: 18px 22px;
+      border-radius: 28px;
+      background: rgba(255, 255, 255, 0.5);
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(255, 255, 255, 0.7);
+      transition: 0.2s;
+    }
+    .info-panel .label {
+      font-weight: 500;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #3b4e6b;
+      opacity: 0.7;
+      margin-bottom: 6px;
+    }
+    .info-panel .url-display {
+      word-break: break-all;
+      font-size: 0.95rem;
+      background: rgba(20, 30, 50, 0.03);
+      padding: 12px 16px;
+      border-radius: 40px;
+      border: 1px dashed rgba(60, 80, 130, 0.15);
+      color: #12233f;
+      font-weight: 450;
+      transition: 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .info-panel .url-display .empty-hint {
+      opacity: 0.35;
+      font-weight: 350;
+    }
+    .url-display a {
+      color: #1b3a7a;
+      text-decoration: none;
+      font-weight: 500;
+      border-bottom: 1px dotted rgba(30, 60, 130, 0.2);
+    }
+    .url-display a:hover {
+      border-bottom: 1px solid #1b3a7a;
+    }
+    .footer-note {
+      margin-top: 18px;
+      text-align: right;
+      font-size: 0.75rem;
+      color: #4a6080;
+      opacity: 0.5;
+      letter-spacing: 0.4px;
+    }
+    @media (max-width: 480px) {
+      .card { padding: 28px 18px; }
+      .button-grid { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px; }
+      .btn { font-size: 0.85rem; padding: 12px 4px; }
+    }
+  </style>
 </head>
 <body>
-    <p></p>
+  <div class="card" role="main">
+    <h1>
+      <span>🌐 网址导航</span>
+      <small>h 数组</small>
+    </h1>
+    <div class="subtitle">
+      <span>⏺ 点击按钮打开对应网址</span>
+      <span class="badge" id="countBadge">0 个</span>
+    </div>
+
+    <!-- 动态按钮容器 -->
+    <div id="buttonContainer" class="button-grid"></div>
+
+    <!-- 显示当前选中网址 -->
+    <div class="info-panel" id="infoPanel">
+      <div class="label">📌 当前选中的网址</div>
+      <div class="url-display" id="urlDisplay">
+        <span class="empty-hint">点击上方按钮查看</span>
+      </div>
+    </div>
+    <div class="footer-note">
+      <span>⚡ 数组驱动 · 即点即开</span>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      // ---------- 核心数组：h ----------
+      // 在这里放入任意数量的网址（http/https 均可）
+      const h = [
+        'http://wzpxfwsj.garden/login/index.html?ken=MHRyZmVzLmhmeGl2YmUuY29tLzF2a3o2UVhEUQ==',
+        'https://ppt.beegoedu.com/Lrk/9mzHfj/SKhPiw7o?kfc=NzB5bHoudTR4dGo1My5qdnQvQi0tVmdJM21p',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        ''
+      ];
+
+      // 如果希望快速测试，可以取消注释下面这行（覆盖上面数组）
+      // const h = ['https://example.com', 'https://stackoverflow.com', 'https://www.baidu.com'];
+
+      // ---------- DOM 引用 ----------
+      const container = document.getElementById('buttonContainer');
+      const urlDisplay = document.getElementById('urlDisplay');
+      const countBadge = document.getElementById('countBadge');
+
+      // ---------- 辅助函数：安全打开网址 ----------
+      function openUrl(url) {
+        if (!url) return;
+        // 如果网址没有协议头，默认添加 https://
+        let finalUrl = url.trim();
+        if (!/^https?:\/\//i.test(finalUrl)) {
+          finalUrl = 'https://' + finalUrl;
+        }
+        // 在新窗口 / 新标签页打开
+        window.open(finalUrl, '_blank', 'noopener,noreferrer');
+      }
+
+      // ---------- 渲染按钮 + 点击显示网址 ----------
+      function renderButtons() {
+        // 清空容器
+        container.innerHTML = '';
+
+        // 更新数量徽标
+        countBadge.textContent = h.length + ' 个';
+
+        // 如果数组为空，显示占位信息
+        if (h.length === 0) {
+          const emptyMsg = document.createElement('div');
+          emptyMsg.style.cssText = 'grid-column: 1 / -1; text-align: center; padding: 28px 10px; color: #5b6f8c; background: rgba(0,0,0,0.02); border-radius: 60px; font-size: 0.95rem;';
+          emptyMsg.textContent = '📭 数组 h 为空，请添加网址';
+          container.appendChild(emptyMsg);
+          // 清空显示区域
+          urlDisplay.innerHTML = `<span class="empty-hint">暂无网址</span>`;
+          return;
+        }
+
+        // 遍历数组，生成按钮 (索引从 1 开始显示)
+        h.forEach((url, index) => {
+          const btn = document.createElement('button');
+          btn.className = 'btn';
+          
+          // 按钮显示：序号 + 精简预览 (取域名或截取前12字符)
+          let displayName = url.trim();
+          let preview = displayName;
+          // 尝试提取域名作为预览
+          try {
+            const urlObj = new URL(displayName.startsWith('http') ? displayName : 'https://' + displayName);
+            let host = urlObj.hostname;
+            if (host.startsWith('www.')) host = host.slice(4);
+            preview = host.length > 18 ? host.slice(0, 18) + '…' : host;
+          } catch (_) {
+            // 如果不是合法 URL，截取前12个字符
+            preview = displayName.length > 14 ? displayName.slice(0, 14) + '…' : displayName;
+          }
+          
+          // 构建按钮内部 HTML
+          btn.innerHTML = `
+            <span class="index">${index + 1}</span>
+            <span class="url-preview" title="${displayName}">${preview}</span>
+          `;
+
+          // 点击按钮行为：打开网址 + 在下方显示网址
+          btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const rawUrl = url.trim();
+            // 显示在 info 面板
+            let displayUrl = rawUrl;
+            if (!/^https?:\/\//i.test(displayUrl)) {
+              displayUrl = 'https://' + displayUrl;
+            }
+            // 构造显示HTML：带链接（可点击）和纯文本
+            urlDisplay.innerHTML = `
+              <span style="display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <span style="opacity:0.5;">🔗</span>
+                <a href="${displayUrl}" target="_blank" rel="noopener noreferrer" title="在新标签打开">${displayUrl}</a>
+                <span style="font-size: 0.7rem; background: rgba(0,0,0,0.04); padding: 0 10px; border-radius: 30px; color: #2a4a6a;">点击按钮已打开</span>
+              </span>
+            `;
+            // 打开网址
+            openUrl(rawUrl);
+          });
+
+          container.appendChild(btn);
+        });
+
+        // 如果 h 数组有内容，默认显示第一个网址 (可选)
+        if (h.length > 0) {
+          const firstUrl = h[0].trim();
+          let displayFirst = firstUrl;
+          if (!/^https?:\/\//i.test(displayFirst)) {
+            displayFirst = 'https://' + displayFirst;
+          }
+          urlDisplay.innerHTML = `
+            <span style="display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <span style="opacity:0.4;">📎</span>
+              <span style="color: #1b3a6b;">${displayFirst}</span>
+              <span style="font-size: 0.7rem; background: rgba(0,0,0,0.03); padding: 0 12px; border-radius: 30px; color: #2f4a6a;">点击按钮打开</span>
+            </span>
+          `;
+        }
+      }
+
+      // ---------- 初始化 ----------
+      renderButtons();
+
+      // （可选）暴露 h 数组到全局方便调试，但不必须
+      // window.__h = h;
+    })();
+  </script>
 </body>
 </html>
