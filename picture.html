@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>🖼️ 图片库</title>
+
+    <!-- ✅ 改这里：换成国内可访问的 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <!-- 兜底：如果上面没加载成功，自动再试一个 -->
+    <script>
+        if (typeof JSZip === 'undefined') {
+            document.write('<script src="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/jszip/3.10.1/jszip.min.js"><\/script>');
+        }
+    </script>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0f1a2e;
+            min-height: 100vh;
+            font-family: system-ui, -apple-system, sans-serif;
+            padding: 1rem;
+            color: #e8edf5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .nav-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.8rem 1.2rem;
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 16px;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(255,255,255,0.06);
+            color: #c8d6e5;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .nav-bar .back-link {
+            color: #8ba0c9;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.9rem;
+            padding: 4px 12px;
+            border-radius: 40px;
+            transition: 0.2s;
+        }
+        .nav-bar .back-link:active { background: rgba(255,255,255,0.08); }
+        .nav-bar .title {
+            font-weight: 500;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .nav-bar .title i { color: #4ecdc4; }
+        .nav-bar .info {
+            font-size: 0.8rem;
+            color: #5a7a9f;
+        }
+
+        /* ===== 数据源切换 ===== */
+        .source-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .source-tab {
+            padding: 0.5rem 1.2rem;
+            border-radius: 40px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            color: #8ba0c9;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            touch-action: manipulation;
+        }
+        .source-tab:active { transform: scale(0.95); }
+        .source-tab.active {
+            background: rgba(78,205,196,0.15);
+            border-color: #4ecdc4;
+            color: #4ecdc4;
+        }
+
+        /* ===== 自定义链接输入区 ===== */
+        .custom-input-area {
+            display: none;
+            gap: 10px;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 16px;
+            padding: 1rem;
+        }
+        .custom-input-area.show { display: flex; }
+        .custom-input-area input {
+            flex: 1;
+            padding: 0.6rem 1rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.05);
+            color: #e8edf5;
+            font-size: 0.85rem;
+            outline: none;
+            min-width: 200px;
+        }
+        .custom-input-area input:focus { border-color: #4ecdc4; }
+        .custom-input-area input::placeholder { color: #5a7a9f; }
+        .custom-input-area button {
+            padding: 0.6rem 1.4rem;
+            border: none;
+            border-radius: 12px;
+            background: #4ecdc4;
+            color: #0f1a2e;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.15s;
+            white-space: nowrap;
+        }
+        .custom-input-area button:active { transform: scale(0.94); opacity: 0.8; }
+
+        /* ===== 网格 ===== */
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+            padding-bottom: 2rem;
+        }
+        .image-grid .img-item {
+            position: relative;
+            aspect-ratio: 1 / 1;
+            background: rgba(255,255,255,0.04);
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: 0.15s ease;
+        }
+        .image-grid .img-item:active {
+            transform: scale(0.94);
+            border-color: #4ecdc4;
+        }
+        .image-grid .img-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .image-grid .img-item .file-name {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 0.3rem 0.5rem;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            font-size: 0.55rem;
+            color: #aac3e0;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .image-grid .empty-item {
+            aspect-ratio: 1 / 1;
+            background: rgba(255,255,255,0.02);
+            border-radius: 12px;
+            border: 1px dashed rgba(255,255,255,0.06);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #3a5a7a;
+            font-size: 0.7rem;
+        }
+
+        /* ===== 加载提示 ===== */
+        .loading {
+            text-align: center;
+            padding: 4rem 1rem;
+            color: #5a7a9f;
+        }
+        .loading i {
+            font-size: 2.5rem;
+            display: block;
+            margin-bottom: 1rem;
+            color: #4ecdc4;
+        }
+        .spinner { animation: spin 1s linear infinite; }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* ===== 全屏查看器 ===== */
+        .viewer-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            z-index: 999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+            animation: fadeIn 0.25s ease;
+            touch-action: none;
+            overflow: hidden;
+        }
+        .viewer-overlay.active { display: flex; }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .viewer-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        .viewer-image-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            touch-action: none;
+            cursor: grab;
+        }
+        .viewer-image-container:active {
+            cursor: grabbing;
+        }
+
+        .viewer-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            transition: none;
+            will-change: transform;
+            transform-origin: center center;
+        }
+
+        .viewer-close {
+            position: absolute;
+            top: 16px;
+            right: 20px;
+            color: #fff;
+            font-size: 1.8rem;
+            cursor: pointer;
+            background: rgba(0,0,0,0.5);
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: 0.2s;
+            z-index: 20;
+            touch-action: manipulation;
+        }
+        .viewer-close:active {
+            background: rgba(255,255,255,0.2);
+            transform: scale(0.9);
+        }
+
+        .viewer-counter {
+            position: absolute;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #8ba0c9;
+            font-size: 0.85rem;
+            background: rgba(0,0,0,0.6);
+            padding: 0.3rem 1.2rem;
+            border-radius: 40px;
+            border: 1px solid rgba(255,255,255,0.06);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        .viewer-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255,255,255,0.35);
+            font-size: 2.2rem;
+            cursor: pointer;
+            padding: 0.5rem 1rem;
+            transition: 0.2s;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            z-index: 15;
+            background: rgba(0,0,0,0.2);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .viewer-nav:active {
+            color: #fff;
+            background: rgba(255,255,255,0.1);
+            transform: translateY(-50%) scale(1.1);
+        }
+        .viewer-nav.prev { left: 8px; }
+        .viewer-nav.next { right: 8px; }
+
+        .viewer-hint {
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255,255,255,0.25);
+            font-size: 0.7rem;
+            background: rgba(0,0,0,0.3);
+            padding: 0.2rem 1rem;
+            border-radius: 40px;
+            white-space: nowrap;
+            z-index: 15;
+            pointer-events: none;
+        }
+
+        @media (max-width: 768px) {
+            .image-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 8px;
+            }
+            .viewer-nav { width: 40px; height: 40px; font-size: 1.4rem; }
+            .viewer-close { top: 12px; right: 14px; width: 38px; height: 38px; font-size: 1.4rem; }
+            .viewer-counter { bottom: 16px; font-size: 0.7rem; padding: 0.2rem 0.8rem; }
+            .viewer-hint { display: none; }
+        }
+        @media (max-width: 480px) {
+            .image-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 6px;
+            }
+            .nav-bar .title { font-size: 0.85rem; }
+            .nav-bar .info { font-size: 0.65rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="nav-bar">
+        <a href="index.html" class="back-link"><i class="fas fa-arrow-left"></i> 返回</a>
+        <span class="title"><i class="fas fa-images"></i> 图片库</span>
+        <span class="info" id="infoText">加载中...</span>
+    </div>
+
+    <!-- 数据源切换 -->
+    <div class="source-tabs">
+        <div class="source-tab active" data-mode="image" id="tabImage">
+            <i class="fas fa-image"></i> 图片列表
+        </div>
+        <div class="source-tab" data-mode="zip" id="tabZip">
+            <i class="fas fa-file-archive"></i> ZIP 压缩包
+        </div>
+        <div class="source-tab" data-mode="custom" id="tabCustom">
+            <i class="fas fa-link"></i> 自定义链接
+        </div>
+    </div>
+
+    <!-- 自定义输入区（默认隐藏） -->
+    <div class="custom-input-area" id="customInputArea">
+        <input type="text" id="customUrlInput" placeholder="粘贴图片直链或 ZIP 压缩包链接（支持多个，用逗号分隔）">
+        <button id="customLoadBtn">加载</button>
+    </div>
+
+    <div id="imageGrid" class="image-grid">
+        <div class="loading" style="grid-column:1/-1;">
+            <i class="fas fa-spinner spinner"></i>
+            正在准备，请稍候...
+        </div>
+    </div>
+</div>
+
+<!-- ===== 查看器 ===== -->
+<div class="viewer-overlay" id="viewerOverlay">
+    <div class="viewer-wrapper" id="viewerWrapper">
+        <div class="viewer-close" id="viewerClose"><i class="fas fa-times"></i></div>
+        <div class="viewer-nav prev" id="viewerPrev"><i class="fas fa-chevron-left"></i></div>
+        <div class="viewer-nav next" id="viewerNext"><i class="fas fa-chevron-right"></i></div>
+        <div class="viewer-image-container" id="imageContainer">
+            <img class="viewer-image" id="viewerImage" src="" alt="预览" draggable="false">
+        </div>
+        <div class="viewer-counter" id="viewerCounter">1 / 1</div>
+        <div class="viewer-hint">🖱 双指缩放 · 拖动平移</div>
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+<script>
+    (function() {
+        // ============================================================
+        // 配置区
+        // ============================================================
+        // ZIP 压缩包直链（备用数据源，留空则不启用）
+        var ZIP_URL = '';
+
+        // 单张图片直链列表（默认数据源）
+        var IMAGE_URLS = [
+            'https://www.boximchat.com/file/box-im/image/20261002/2105970636252798976.jpg',
+            'https://www.boximchat.com/file/box-im/image/20261002/2105970654170865664.jpg',
+            'https://www.boximchat.com/file/box-im/image/20261002/2105970645006311424.jpg',
+            'https://www.boximchat.com/file/box-im/image/20261002/2105970657467588608.jpg',
+            'https://www.boximchat.com/file/box-im/image/20261002/2105970663104733184.jpg',
+            'https://www.boximchat.com/file/box-im/image/20261002/2105970669383606272.jpg',
+            'https://www.boximchat.com/file/box-im/image/20261002/2105970673338834944.jpg',
+            'https://www.boximchat.com/file/box-im/image/20261002/2105970680070692864.jpg'
+        ];
+        // ============================================================
+
+        var grid = document.getElementById('imageGrid');
+        var infoText = document.getElementById('infoText');
+
+        // 切换按钮
+        var tabZip = document.getElementById('tabZip');
+        var tabImage = document.getElementById('tabImage');
+        var tabCustom = document.getElementById('tabCustom');
+        var customInputArea = document.getElementById('customInputArea');
+        var customUrlInput = document.getElementById('customUrlInput');
+        var customLoadBtn = document.getElementById('customLoadBtn');
+
+        // 查看器元素
+        var overlay = document.getElementById('viewerOverlay');
+        var wrapper = document.getElementById('viewerWrapper');
+        var container = document.getElementById('imageContainer');
+        var viewerImg = document.getElementById('viewerImage');
+        var viewerCounter = document.getElementById('viewerCounter');
+        var viewerClose = document.getElementById('viewerClose');
+        var viewerPrev = document.getElementById('viewerPrev');
+        var viewerNext = document.getElementById('viewerNext');
+
+        var imageItems = [];
+        var currentIndex = 0;
+        var currentMode = 'image';
+
+        // ============================================================
+        // 变换状态（缩放 + 平移）
+        // ============================================================
+        var state = { scale: 1, translateX: 0, translateY: 0 };
+        var minScale = 1;
+        var maxScale = 5;
+        var isInteracting = false;
+        var tempState = { scale: 1, translateX: 0, translateY: 0 };
+
+        function applyTransform() {
+            var s = isInteracting ? tempState : state;
+            viewerImg.style.transform = 'translate(' + s.translateX + 'px, ' + s.translateY + 'px) scale(' + s.scale + ')';
+        }
+
+        function resetTransform() {
+            state.scale = 1;
+            state.translateX = 0;
+            state.translateY = 0;
+            isInteracting = false;
+            applyTransform();
+        }
+
+        function clampTransform() {
+            if (state.scale < minScale) state.scale = minScale;
+            if (state.scale > maxScale) state.scale = maxScale;
+            if (state.scale <= 1.01) {
+                state.translateX = 0;
+                state.translateY = 0;
+            }
+        }
+
+        // ============================================================
+        // 数据源切换
+        // ============================================================
+        function switchMode(mode) {
+            currentMode = mode;
+            [tabZip, tabImage, tabCustom].forEach(function(t) { t.classList.remove('active'); });
+            if (mode === 'zip') {
+                tabZip.classList.add('active');
+                customInputArea.classList.remove('show');
+                loadZipAndExtract();
+            } else if (mode === 'image') {
+                tabImage.classList.add('active');
+                customInputArea.classList.remove('show');
+                loadImageList(IMAGE_URLS);
+            } else {
+                tabCustom.classList.add('active');
+                customInputArea.classList.add('show');
+                grid.innerHTML = '<div class="loading" style="grid-column:1/-1;">'
+                    + '<i class="fas fa-link" style="color:#4ecdc4;"></i>'
+                    + '请在上方输入链接，然后点击「加载」</div>';
+                infoText.textContent = '等待输入...';
+            }
+        }
+
+        tabZip.addEventListener('click', function() { switchMode('zip'); });
+        tabImage.addEventListener('click', function() { switchMode('image'); });
+        tabCustom.addEventListener('click', function() { switchMode('custom'); });
+
+        // ============================================================
+        // 加载 ZIP
+        // ============================================================
+        function loadZipAndExtract(url) {
+            url = url || ZIP_URL;
+
+            // 未配置 ZIP 链接
+            if (!url) {
+                grid.innerHTML = '<div class="loading" style="grid-column:1/-1;">'
+                    + '<i class="fas fa-file-archive" style="color:#4ecdc4;"></i>'
+                    + '未配置 ZIP 链接，请使用「图片列表」或「自定义链接」模式</div>';
+                infoText.textContent = '未配置 ZIP';
+                return;
+            }
+
+            if (typeof JSZip === 'undefined') {
+                grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:3rem 1rem;color:#ff6b6b;">'
+                    + '<i class="fas fa-exclamation-circle" style="font-size:2.5rem;display:block;margin-bottom:1rem;"></i>'
+                    + '<p>JSZip 库加载失败，请检查网络后刷新页面。</p></div>';
+                infoText.textContent = '❌ JSZip 未加载';
+                return;
+            }
+
+            grid.innerHTML = '<div class="loading" style="grid-column:1/-1;">'
+                + '<i class="fas fa-spinner spinner"></i> 正在下载并解析 ZIP 文件，请稍候...</div>';
+            infoText.textContent = '下载 ZIP...';
+
+            fetch(url)
+                .then(function(response) {
+                    if (!response.ok) throw new Error('HTTP ' + response.status);
+                    infoText.textContent = 'ZIP 下载完成，正在解压...';
+                    return response.arrayBuffer();
+                })
+                .then(function(buffer) { return JSZip.loadAsync(buffer); })
+                .then(function(zip) {
+                    infoText.textContent = '解压完成，提取图片...';
+                    var imageFiles = [];
+                    zip.forEach(function(path, file) {
+                        var name = file.name.toLowerCase();
+                        if (/\.(jpg|jpeg|png|gif|webp|bmp|svg|ico)$/.test(name)) {
+                            imageFiles.push(file);
+                        }
+                    });
+                    if (imageFiles.length === 0) throw new Error('未找到图片文件');
+                    infoText.textContent = '找到 ' + imageFiles.length + ' 张图片，正在加载...';
+                    return Promise.all(imageFiles.map(function(file) {
+                        return file.async('blob').then(function(blob) {
+                            return { name: file.name, url: URL.createObjectURL(blob) };
+                        });
+                    }));
+                })
+                .then(function(images) {
+                    imageItems = images;
+                    renderGrid(images);
+                    infoText.textContent = '✅ 共 ' + images.length + ' 张图片';
+                })
+                .catch(function(err) {
+                    console.error(err);
+                    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:3rem 1rem;color:#ff6b6b;">'
+                        + '<i class="fas fa-exclamation-circle" style="font-size:2.5rem;display:block;margin-bottom:1rem;"></i>'
+                        + '<p>加载失败：' + (err.message || '未知错误') + '</p></div>';
+                    infoText.textContent = '❌ 加载失败';
+                });
+        }
+
+        // ============================================================
+        // 加载图片列表
+        // ============================================================
+        function loadImageList(urls) {
+            if (!urls || urls.length === 0) {
+                grid.innerHTML = '<div class="loading" style="grid-column:1/-1;">'
+                    + '<i class="fas fa-image" style="color:#4ecdc4;"></i>'
+                    + '暂无图片，请编辑代码中的 IMAGE_URLS 数组添加图片链接</div>';
+                infoText.textContent = '0 张图片';
+                return;
+            }
+            var items = urls.map(function(url, i) {
+                var name = url.split('/').pop().split('?')[0] || ('image-' + (i + 1));
+                return { name: name, url: url };
+            });
+            imageItems = items;
+            renderGrid(items);
+            infoText.textContent = '✅ 共 ' + items.length + ' 张图片';
+        }
+
+        // ============================================================
+        // 自定义链接加载（自动识别图片 / ZIP）
+        // ============================================================
+        function loadCustomUrls(rawInput) {
+            if (!rawInput || !rawInput.trim()) {
+                alert('请输入链接');
+                return;
+            }
+            var parts = rawInput.split(/[\s,]+/).filter(function(s) { return s.trim(); });
+            if (parts.length === 0) {
+                alert('请输入链接');
+                return;
+            }
+
+            var zipUrls = [];
+            var imgUrls = [];
+            parts.forEach(function(u) {
+                var lower = u.toLowerCase().split('?')[0];
+                if (lower.endsWith('.zip')) {
+                    zipUrls.push(u);
+                } else {
+                    imgUrls.push(u);
+                }
+            });
+
+            // 单个 ZIP
+            if (zipUrls.length === 1 && imgUrls.length === 0) {
+                loadZipAndExtract(zipUrls[0]);
+                return;
+            }
+
+            // ZIP + 图片混合
+            if (zipUrls.length > 0) {
+                grid.innerHTML = '<div class="loading" style="grid-column:1/-1;">'
+                    + '<i class="fas fa-spinner spinner"></i> 正在解析 ZIP 并合并图片...</div>';
+                infoText.textContent = '处理中...';
+
+                Promise.all(zipUrls.map(function(zu) {
+                    return fetch(zu)
+                        .then(function(r) { return r.arrayBuffer(); })
+                        .then(function(buf) { return JSZip.loadAsync(buf); })
+                        .then(function(zip) {
+                            var files = [];
+                            zip.forEach(function(path, file) {
+                                if (/\.(jpg|jpeg|png|gif|webp|bmp|svg|ico)$/i.test(file.name)) {
+                                    files.push(file);
+                                }
+                            });
+                            return Promise.all(files.map(function(f) {
+                                return f.async('blob').then(function(blob) {
+                                    return { name: f.name, url: URL.createObjectURL(blob) };
+                                });
+                            }));
+                        });
+                })).then(function(zipResults) {
+                    var allImages = [];
+                    zipResults.forEach(function(arr) { allImages = allImages.concat(arr); });
+                    imgUrls.forEach(function(u, i) {
+                        allImages.push({ name: u.split('/').pop().split('?')[0] || ('image-' + i), url: u });
+                    });
+                    imageItems = allImages;
+                    renderGrid(allImages);
+                    infoText.textContent = '✅ 共 ' + allImages.length + ' 张图片';
+                }).catch(function(err) {
+                    console.error(err);
+                    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:3rem 1rem;color:#ff6b6b;">'
+                        + '<i class="fas fa-exclamation-circle" style="font-size:2.5rem;display:block;margin-bottom:1rem;"></i>'
+                        + '<p>加载失败：' + (err.message || '未知错误') + '</p></div>';
+                    infoText.textContent = '❌ 加载失败';
+                });
+                return;
+            }
+
+            // 全部图片
+            loadImageList(imgUrls);
+        }
+
+        customLoadBtn.addEventListener('click', function() {
+            loadCustomUrls(customUrlInput.value);
+        });
+        customUrlInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') customLoadBtn.click();
+        });
+
+        // ============================================================
+        // 渲染网格
+        // ============================================================
+        function renderGrid(images) {
+            grid.innerHTML = '';
+            images.forEach(function(item, index) {
+                var div = document.createElement('div');
+                div.className = 'img-item';
+                var img = document.createElement('img');
+                img.src = item.url;
+                img.alt = item.name;
+                img.loading = 'lazy';
+                var nameSpan = document.createElement('div');
+                nameSpan.className = 'file-name';
+                nameSpan.textContent = item.name;
+                div.appendChild(img);
+                div.appendChild(nameSpan);
+                div.addEventListener('click', function() { openViewer(index); });
+                grid.appendChild(div);
+            });
+            var rem = images.length % 5;
+            if (rem !== 0) {
+                for (var i = 0; i < 5 - rem; i++) {
+                    var empty = document.createElement('div');
+                    empty.className = 'empty-item';
+                    empty.textContent = '📷';
+                    grid.appendChild(empty);
+                }
+            }
+        }
+
+        // ============================================================
+        // 查看器控制
+        // ============================================================
+        function openViewer(index) {
+            if (imageItems.length === 0) return;
+            currentIndex = index;
+            resetTransform();
+            updateViewerImage();
+            overlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeViewer() {
+            overlay.classList.remove('active');
+            document.body.style.overflow = '';
+            resetTransform();
+        }
+
+        function updateViewerImage() {
+            var item = imageItems[currentIndex];
+            viewerImg.src = item.url;
+            viewerImg.alt = item.name;
+            viewerCounter.textContent = (currentIndex + 1) + ' / ' + imageItems.length;
+            resetTransform();
+        }
+
+        function prevImage() {
+            if (imageItems.length === 0) return;
+            currentIndex = (currentIndex - 1 + imageItems.length) % imageItems.length;
+            updateViewerImage();
+        }
+
+        function nextImage() {
+            if (imageItems.length === 0) return;
+            currentIndex = (currentIndex + 1) % imageItems.length;
+            updateViewerImage();
+        }
+
+        // 鼠标滚轮缩放
+        viewerImg.addEventListener('wheel', function(e) {
+            e.preventDefault();
+            var delta = e.deltaY > 0 ? -0.15 : 0.15;
+            var newScale = Math.min(maxScale, Math.max(minScale, state.scale + delta));
+            state.scale = newScale;
+            clampTransform();
+            applyTransform();
+        }, { passive: false });
+
+        // 鼠标拖拽平移
+        var isDragging = false;
+        var dragStartX = 0, dragStartY = 0;
+        var dragStartTranslateX = 0, dragStartTranslateY = 0;
+
+        container.addEventListener('mousedown', function(e) {
+            if (state.scale <= 1.01) return;
+            isDragging = true;
+            dragStartX = e.clientX;
+            dragStartY = e.clientY;
+            dragStartTranslateX = state.translateX;
+            dragStartTranslateY = state.translateY;
+            container.style.cursor = 'grabbing';
+            e.preventDefault();
+        });
+
+        document.addEventListener('mousemove', function(e) {
+            if (!isDragging) return;
+            var dx = e.clientX - dragStartX;
+            var dy = e.clientY - dragStartY;
+            state.translateX = dragStartTranslateX + dx;
+            state.translateY = dragStartTranslateY + dy;
+            applyTransform();
+        });
+
+        document.addEventListener('mouseup', function() {
+            if (isDragging) {
+                isDragging = false;
+                container.style.cursor = 'grab';
+                clampTransform();
+                applyTransform();
+            }
+        });
+
+        // 触摸事件
+        var touchStartDist = 0;
+        var touchStartScale = 1;
+        var touchStartTranslateX = 0;
+        var touchStartTranslateY = 0;
+        var isTouchDragging = false;
+        var lastTouchX = 0, lastTouchY = 0;
+
+        container.addEventListener('touchstart', function(e) {
+            var t = e.touches;
+            if (t.length === 1) {
+                if (state.scale > 1.01) {
+                    isTouchDragging = true;
+                    lastTouchX = t[0].clientX;
+                    lastTouchY = t[0].clientY;
+                    touchStartTranslateX = state.translateX;
+                    touchStartTranslateY = state.translateY;
+                }
+            } else if (t.length === 2) {
+                isTouchDragging = false;
+                var dx = t[0].clientX - t[1].clientX;
+                var dy = t[0].clientY - t[1].clientY;
+                touchStartDist = Math.sqrt(dx * dx + dy * dy);
+                touchStartScale = state.scale;
+                touchStartTranslateX = state.translateX;
+                touchStartTranslateY = state.translateY;
+            }
+            e.preventDefault();
+        }, { passive: false });
+
+        container.addEventListener('touchmove', function(e) {
+            var t = e.touches;
+            if (t.length === 1 && isTouchDragging) {
+                var dx = t[0].clientX - lastTouchX;
+                var dy = t[0].clientY - lastTouchY;
+                state.translateX = touchStartTranslateX + dx;
+                state.translateY = touchStartTranslateY + dy;
+                applyTransform();
+                e.preventDefault();
+            } else if (t.length === 2) {
+                var dx = t[0].clientX - t[1].clientX;
+                var dy = t[0].clientY - t[1].clientY;
+                var dist = Math.sqrt(dx * dx + dy * dy);
+                var scaleFactor = dist / touchStartDist;
+                var newScale = Math.min(maxScale, Math.max(minScale, touchStartScale * scaleFactor));
+                state.scale = newScale;
+                applyTransform();
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        container.addEventListener('touchend', function(e) {
+            isTouchDragging = false;
+            clampTransform();
+            applyTransform();
+            e.preventDefault();
+        }, { passive: false });
+
+        // 双击放大/还原
+        container.addEventListener('dblclick', function(e) {
+            e.preventDefault();
+            if (state.scale <= 1.05) {
+                state.scale = 2.5;
+                state.translateX = 0;
+                state.translateY = 0;
+            } else {
+                state.scale = 1;
+                state.translateX = 0;
+                state.translateY = 0;
+            }
+            applyTransform();
+        });
+
+        // 按钮事件
+        viewerClose.addEventListener('click', closeViewer);
+        viewerPrev.addEventListener('click', function(e) { e.stopPropagation(); prevImage(); });
+        viewerNext.addEventListener('click', function(e) { e.stopPropagation(); nextImage(); });
+
+        overlay.addEventListener('click', function(e) {
+            if (e.target === overlay || e.target === wrapper) closeViewer();
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (!overlay.classList.contains('active')) return;
+            if (e.key === 'Escape') { closeViewer(); }
+            else if (e.key === 'ArrowLeft') { e.preventDefault(); prevImage(); }
+            else if (e.key === 'ArrowRight') { e.preventDefault(); nextImage(); }
+        });
+
+        // ============================================================
+        // 启动（默认图片列表模式）
+        // ============================================================
+        switchMode('image');
+
+        window.addEventListener('beforeunload', function() {
+            imageItems.forEach(function(item) {
+                if (item.url && item.url.startsWith('blob:')) URL.revokeObjectURL(item.url);
+            });
+        });
+
+    })();
+</script>
+</body>
+</html>
