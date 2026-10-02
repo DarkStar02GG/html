@@ -93,19 +93,6 @@
             color: rgba(255,255,255,0.7);
             text-shadow: 0 2px 20px rgba(0,0,0,0.6);
         }
-        .video-card .thumb .type-badge {
-            position: absolute;
-            top: 6px;
-            right: 6px;
-            z-index: 3;
-            font-size: 0.55rem;
-            padding: 2px 7px;
-            border-radius: 20px;
-            background: rgba(0,0,0,0.55);
-            color: #fff;
-            backdrop-filter: blur(4px);
-            letter-spacing: 0.5px;
-        }
         .video-card .info { padding: 0.7rem 0.9rem 0.9rem; }
         .video-card .info .name {
             font-weight: 500;
@@ -211,7 +198,6 @@
             outline: none;
             background: #0a0a0a;
             display: block;
-            object-fit: contain;
         }
         .btn-turbo {
             position: absolute;
@@ -345,11 +331,11 @@
     <!-- 输入框 -->
     <div class="input-area">
         <div class="row">
-            <input type="text" id="videoUrlInput" placeholder="粘贴视频直链">
+            <input type="text" id="videoUrlInput" placeholder="粘贴视频直链 或 蓝奏云链接">
             <button id="playBtn">▶ 播放</button>
         </div>
         <div class="hint">
-            💡 支持 <code>.mp4</code> <code>.mov</code> <code>.webm</code> <code>.mkv</code> 等视频直链
+            💡 直接粘贴 <code>https://xxx.mp4</code> 直链，或蓝奏云解析地址
         </div>
     </div>
 </div>
@@ -418,41 +404,6 @@
     var isTurboActive = false;
 
     // ============================================================
-    // 🔍 工具函数：从 URL 获取后缀 & MIME 类型
-    // ============================================================
-    var MIME_MAP = {
-        'mp4':  'video/mp4',
-        'm4v':  'video/mp4',
-        'mov':  'video/quicktime',
-        'webm': 'video/webm',
-        'mkv':  'video/x-matroska',
-        'ogv':  'video/ogg',
-        'avi':  'video/x-msvideo',
-        '3gp':  'video/3gpp',
-        'flv':  'video/x-flv',
-        'wmv':  'video/x-ms-wmv'
-    };
-
-    function getExt(url) {
-        if (!url) return '';
-        var clean = url.split('?')[0].split('#')[0];
-        var lastDot = clean.lastIndexOf('.');
-        if (lastDot === -1) return '';
-        return clean.substring(lastDot + 1).toLowerCase();
-    }
-
-    function getMime(url) {
-        var ext = getExt(url);
-        return MIME_MAP[ext] || 'video/mp4';
-    }
-
-    // 设置 <source> 的 src 和 type，确保浏览器按正确 MIME 播放
-    function setVideoSource(url) {
-        source.src = url;
-        source.type = getMime(url);
-    }
-
-    // ============================================================
     // 1. 渲染列表
     // ============================================================
     function renderList() {
@@ -465,14 +416,12 @@
         var html = '';
         videoList.forEach(function(url, index) {
             var num = index + 1;
-            var name = url.split('/').pop().split('?')[0].substring(0, 20) || '视频 ' + num;
-            var ext = getExt(url).toUpperCase() || 'VIDEO';
+            var name = url.split('/').pop().substring(0, 20) || '视频 ' + num;
             html += `
                 <div class="video-card" data-index="${index}">
                     <div class="thumb">
                         <span class="play-icon"><i class="fas fa-play-circle"></i></span>
                         <span style="font-size:2rem;opacity:0.2;">🎬</span>
-                        <span class="type-badge">${ext}</span>
                     </div>
                     <div class="info">
                         <div class="name">${name}</div>
@@ -500,11 +449,10 @@
         }
         currentIndex = index;
         var url = videoList[index];
-        setVideoSource(url);
+        source.src = url;
         video.load();
-        var ext = getExt(url).toUpperCase() || 'VIDEO';
         playerName.textContent = '视频 ' + (index + 1);
-        playerBadge.textContent = ext;
+        playerBadge.textContent = 'MP4';
         listMode.style.display = 'none';
         playerMode.classList.add('active');
         navBackText.textContent = '列表';
@@ -526,12 +474,10 @@
             alert('请输入视频地址');
             return;
         }
-        var cleanUrl = url.trim();
-        setVideoSource(cleanUrl);
+        source.src = url.trim();
         video.load();
-        var ext = getExt(cleanUrl).toUpperCase() || 'VIDEO';
         playerName.textContent = '自定义视频';
-        playerBadge.textContent = ext;
+        playerBadge.textContent = 'MP4';
         listMode.style.display = 'none';
         playerMode.classList.add('active');
         navBackText.textContent = '列表';
@@ -668,7 +614,7 @@
             switch(err.code) {
                 case 1: msg = '视频加载被中止'; break;
                 case 2: msg = '直链已过期，请更新视频地址'; break;
-                case 3: msg = '视频解码失败（可能格式不支持）'; break;
+                case 3: msg = '视频解码失败'; break;
                 case 4: msg = '视频地址无效'; break;
             }
         }
